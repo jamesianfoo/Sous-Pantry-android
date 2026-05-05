@@ -1,0 +1,3 @@
+-keep class com.souspantry.app.data.models.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
