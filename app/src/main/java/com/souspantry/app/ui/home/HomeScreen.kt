@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.souspantry.app.data.models.SuggestedMeal
@@ -24,7 +26,10 @@ import com.souspantry.app.data.models.AdventurousRecipe
 import com.souspantry.app.ui.theme.*
 
 @Composable
-fun HomeScreen(vm: HomeViewModel = hiltViewModel()) {
+fun HomeScreen(
+    onNavigateToSettings: () -> Unit = {},
+    vm: HomeViewModel = hiltViewModel(),
+) {
     val state by vm.state.collectAsState()
 
     LazyColumn(
@@ -32,7 +37,7 @@ fun HomeScreen(vm: HomeViewModel = hiltViewModel()) {
         contentPadding      = PaddingValues(bottom = 24.dp),
     ) {
         item {
-            HomeHeader()
+            HomeHeader(onNavigateToSettings)
         }
 
         // ── Suggested recipes ─────────────────────────────────────────────────
@@ -80,7 +85,7 @@ fun HomeScreen(vm: HomeViewModel = hiltViewModel()) {
 // ── Header ────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun HomeHeader() {
+private fun HomeHeader(onSettings: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -88,8 +93,11 @@ private fun HomeHeader() {
             .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
         Column {
-            Text("Sous Pantry",      style = MaterialTheme.typography.headlineLarge.copy(color = White))
+            Text("Sous Pantry", style = MaterialTheme.typography.headlineLarge.copy(color = White))
             Text("What are we cooking today?", style = MaterialTheme.typography.bodyMedium.copy(color = White.copy(alpha = 0.75f)))
+        }
+        IconButton(onClick = onSettings, modifier = Modifier.align(Alignment.TopEnd)) {
+            Icon(Icons.Filled.Settings, "Settings", tint = White)
         }
     }
 }

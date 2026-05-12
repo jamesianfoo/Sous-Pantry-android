@@ -20,53 +20,58 @@ import androidx.navigation.compose.rememberNavController
 import com.souspantry.app.ui.home.HomeScreen
 import com.souspantry.app.ui.pantry.PantryScreen
 import com.souspantry.app.ui.plancook.PlanCookScreen
+import com.souspantry.app.ui.settings.SettingsScreen
 import com.souspantry.app.ui.shopping.ShoppingScreen
 import com.souspantry.app.ui.theme.Green
 import com.souspantry.app.ui.theme.White
 
-sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
-    data object Home      : Screen("home",      "Home",         Icons.Filled.Home)
-    data object Pantry    : Screen("pantry",    "Pantry",       Icons.Filled.Kitchen)
-    data object PlanCook  : Screen("plancook",  "Plan & Cook",  Icons.Filled.MenuBook)
-    data object Shopping  : Screen("shopping",  "Shopping",     Icons.Filled.ShoppingCart)
+sealed class Screen(val route: String, val label: String, val icon: ImageVector? = null) {
+    data object Home      : Screen("home",      "Home",        Icons.Filled.Home)
+    data object Pantry    : Screen("pantry",    "Pantry",      Icons.Filled.Kitchen)
+    data object PlanCook  : Screen("plancook",  "Plan & Cook", Icons.Filled.MenuBook)
+    data object Shopping  : Screen("shopping",  "Shopping",    Icons.Filled.ShoppingCart)
+    data object Settings  : Screen("settings",  "Settings")
+    data object Barcode   : Screen("barcode",   "Scan Barcode")
+    data object Receipt   : Screen("receipt",   "Scan Receipt")
+    data object Onboarding: Screen("onboarding","Onboarding")
+    data object Auth      : Screen("auth",      "Sign In")
+    data object Paywall   : Screen("paywall",   "Premium")
 }
 
-private val bottomNavItems = listOf(
-    Screen.Home, Screen.Pantry, Screen.PlanCook, Screen.Shopping
-)
+private val bottomNavItems = listOf(Screen.Home, Screen.Pantry, Screen.PlanCook, Screen.Shopping)
 
 @Composable
 fun SousPantryNavHost() {
     val navController = rememberNavController()
     val navBackStack  by navController.currentBackStackEntryAsState()
     val currentDest   = navBackStack?.destination
+    val showBottomBar = currentDest?.route in bottomNavItems.map { it.route }
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = White,
-            ) {
-                bottomNavItems.forEach { screen ->
-                    val selected = currentDest?.hierarchy?.any { it.route == screen.route } == true
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick  = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState    = true
-                            }
-                        },
-                        icon  = { Icon(screen.icon, contentDescription = screen.label) },
-                        label = { Text(screen.label) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor       = Green,
-                            selectedTextColor       = Green,
-                            unselectedIconColor     = Green.copy(alpha = 0.45f),
-                            unselectedTextColor     = Green.copy(alpha = 0.45f),
-                            indicatorColor          = White,
+            if (showBottomBar) {
+                NavigationBar(containerColor = White) {
+                    bottomNavItems.forEach { screen ->
+                        val selected = currentDest?.hierarchy?.any { it.route == screen.route } == true
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick  = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState    = true
+                                }
+                            },
+                            icon   = { Icon(screen.icon!!, screen.label) },
+                            label  = { Text(screen.label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor   = Green, selectedTextColor   = Green,
+                                unselectedIconColor = Green.copy(alpha = 0.45f),
+                                unselectedTextColor = Green.copy(alpha = 0.45f),
+                                indicatorColor      = White,
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -76,10 +81,16 @@ fun SousPantryNavHost() {
             startDestination = Screen.Home.route,
             modifier         = Modifier.padding(innerPadding),
         ) {
-            composable(Screen.Home.route)     { HomeScreen() }
+            composable(Screen.Home.route)     { HomeScreen(onNavigateToSettings = { navController.navigate(Screen.Settings.route) }) }
             composable(Screen.Pantry.route)   { PantryScreen() }
             composable(Screen.PlanCook.route) { PlanCookScreen() }
             composable(Screen.Shopping.route) { ShoppingScreen() }
+            composable(Screen.Settings.route) { SettingsScreen(onBack = { navController.popBackStack() }) }
+            composable(Screen.Barcode.route)  { /* Task 4 — BarcodeScanScreen */ }
+            composable(Screen.Receipt.route)  { /* Task 5 — ReceiptScanScreen */ }
+            composable(Screen.Onboarding.route) { /* Task 9 — OnboardingScreen */ }
+            composable(Screen.Auth.route)     { /* Task 7 — AuthScreen */ }
+            composable(Screen.Paywall.route)  { /* Task 8 — PaywallScreen */ }
         }
     }
 }
