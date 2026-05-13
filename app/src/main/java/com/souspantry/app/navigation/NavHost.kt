@@ -8,9 +8,11 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -18,6 +20,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.souspantry.app.ui.home.HomeScreen
+import com.souspantry.app.ui.onboarding.OnboardingScreen
+import com.souspantry.app.ui.onboarding.OnboardingViewModel
 import com.souspantry.app.ui.pantry.BarcodeScanScreen
 import com.souspantry.app.ui.pantry.PantryScreen
 import com.souspantry.app.ui.pantry.ReceiptScanScreen
@@ -44,6 +48,9 @@ private val bottomNavItems = listOf(Screen.Home, Screen.Pantry, Screen.PlanCook,
 
 @Composable
 fun SousPantryNavHost() {
+    val onboardingVm: OnboardingViewModel = hiltViewModel()
+    val onboardingDone by onboardingVm.onboardingDone.collectAsState()
+    val startDest = if (onboardingDone) Screen.Home.route else Screen.Onboarding.route
     val navController = rememberNavController()
     val navBackStack  by navController.currentBackStackEntryAsState()
     val currentDest   = navBackStack?.destination
@@ -80,7 +87,7 @@ fun SousPantryNavHost() {
     ) { innerPadding ->
         NavHost(
             navController    = navController,
-            startDestination = Screen.Home.route,
+            startDestination = startDest,
             modifier         = Modifier.padding(innerPadding),
         ) {
             composable(Screen.Home.route)     { HomeScreen(onNavigateToSettings = { navController.navigate(Screen.Settings.route) }) }
@@ -103,7 +110,13 @@ fun SousPantryNavHost() {
                     onSaved   = { navController.popBackStack() },
                 )
             }
-            composable(Screen.Onboarding.route) { /* Task 9 — OnboardingScreen */ }
+            composable(Screen.Onboarding.route) {
+                OnboardingScreen(onComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                })
+            }
             composable(Screen.Auth.route)     { /* Task 7 — AuthScreen */ }
             composable(Screen.Paywall.route)  { /* Task 8 — PaywallScreen */ }
         }
