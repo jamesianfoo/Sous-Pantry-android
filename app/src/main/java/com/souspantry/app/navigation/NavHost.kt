@@ -2,6 +2,7 @@ package com.souspantry.app.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.MenuBook
@@ -36,7 +37,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
     data object Pantry    : Screen("pantry",    "Pantry",      Icons.Filled.Kitchen)
     data object PlanCook  : Screen("plancook",  "Plan & Cook", Icons.Filled.MenuBook)
     data object Shopping  : Screen("shopping",  "Shopping",    Icons.Filled.ShoppingCart)
-    data object Settings  : Screen("settings",  "Settings")
+    data object Account   : Screen("account",   "Account",     Icons.Filled.AccountCircle)
     data object Barcode   : Screen("barcode",   "Scan Barcode")
     data object Receipt   : Screen("receipt",   "Scan Receipt")
     data object Onboarding: Screen("onboarding","Onboarding")
@@ -44,7 +45,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
     data object Paywall   : Screen("paywall",   "Premium")
 }
 
-private val bottomNavItems = listOf(Screen.Home, Screen.Pantry, Screen.PlanCook, Screen.Shopping)
+private val bottomNavItems = listOf(Screen.Home, Screen.Pantry, Screen.PlanCook, Screen.Shopping, Screen.Account)
 
 @Composable
 fun SousPantryNavHost() {
@@ -90,14 +91,14 @@ fun SousPantryNavHost() {
             startDestination = startDest,
             modifier         = Modifier.padding(innerPadding),
         ) {
-            composable(Screen.Home.route)     { HomeScreen(onNavigateToSettings = { navController.navigate(Screen.Settings.route) }) }
+            composable(Screen.Home.route)     { HomeScreen() }
             composable(Screen.Pantry.route)   { PantryScreen(
                 onBarcodeScan = { navController.navigate(Screen.Barcode.route) },
                 onReceiptScan = { navController.navigate(Screen.Receipt.route) },
             ) }
             composable(Screen.PlanCook.route) { PlanCookScreen() }
             composable(Screen.Shopping.route) { ShoppingScreen() }
-            composable(Screen.Settings.route) { SettingsScreen(onBack = { navController.popBackStack() }) }
+            composable(Screen.Account.route)  { SettingsScreen() }
             composable(Screen.Barcode.route) {
                 BarcodeScanScreen(
                     onDismiss = { navController.popBackStack() },

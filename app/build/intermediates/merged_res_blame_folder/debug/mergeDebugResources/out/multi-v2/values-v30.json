@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.souspantry.app-mergeDebugResources-79:/values-v30/values-v30.xml",
+            "outputFile": "com.souspantry.app-mergeDebugResources-76:/values-v30/values-v30.xml",
             "map": [
                 {
                     "source": "/Users/jf/.gradle/caches/9.0.0/transforms/d7d9e92ae457384db01620191187baa3/transformed/material3-release/res/values-v30/values-v30.xml",

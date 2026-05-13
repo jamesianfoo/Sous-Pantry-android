@@ -6,6 +6,8 @@ import android.view.View;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModel;
+import com.souspantry.app.data.local.DataStoreModule_ProvideUserPrefsFactory;
+import com.souspantry.app.data.local.UserPreferencesRepository;
 import com.souspantry.app.data.repository.DatabaseModule_ProvidePantryDaoFactory;
 import com.souspantry.app.data.repository.DatabaseModule_ProvidePantryDatabaseFactory;
 import com.souspantry.app.data.repository.PantryDao;
@@ -17,10 +19,18 @@ import com.souspantry.app.services.NetworkModule_ProvideOkHttpClientFactory;
 import com.souspantry.app.services.NetworkModule_ProvideRetrofitFactory;
 import com.souspantry.app.ui.home.HomeViewModel;
 import com.souspantry.app.ui.home.HomeViewModel_HiltModules;
+import com.souspantry.app.ui.onboarding.OnboardingViewModel;
+import com.souspantry.app.ui.onboarding.OnboardingViewModel_HiltModules;
+import com.souspantry.app.ui.pantry.BarcodeScanViewModel;
+import com.souspantry.app.ui.pantry.BarcodeScanViewModel_HiltModules;
 import com.souspantry.app.ui.pantry.PantryViewModel;
 import com.souspantry.app.ui.pantry.PantryViewModel_HiltModules;
+import com.souspantry.app.ui.pantry.ReceiptScanViewModel;
+import com.souspantry.app.ui.pantry.ReceiptScanViewModel_HiltModules;
 import com.souspantry.app.ui.plancook.PlanCookViewModel;
 import com.souspantry.app.ui.plancook.PlanCookViewModel_HiltModules;
+import com.souspantry.app.ui.settings.SettingsViewModel;
+import com.souspantry.app.ui.settings.SettingsViewModel_HiltModules;
 import com.souspantry.app.ui.shopping.ShoppingViewModel;
 import com.souspantry.app.ui.shopping.ShoppingViewModel_HiltModules;
 import dagger.hilt.android.ActivityRetainedLifecycle;
@@ -386,7 +396,7 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
 
     @Override
     public Map<Class<?>, Boolean> getViewModelKeys() {
-      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(4).put(LazyClassKeyProvider.com_souspantry_app_ui_home_HomeViewModel, HomeViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_pantry_PantryViewModel, PantryViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_plancook_PlanCookViewModel, PlanCookViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_shopping_ShoppingViewModel, ShoppingViewModel_HiltModules.KeyModule.provide()).build());
+      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(8).put(LazyClassKeyProvider.com_souspantry_app_ui_pantry_BarcodeScanViewModel, BarcodeScanViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_home_HomeViewModel, HomeViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_onboarding_OnboardingViewModel, OnboardingViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_pantry_PantryViewModel, PantryViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_plancook_PlanCookViewModel, PlanCookViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_pantry_ReceiptScanViewModel, ReceiptScanViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_settings_SettingsViewModel, SettingsViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_souspantry_app_ui_shopping_ShoppingViewModel, ShoppingViewModel_HiltModules.KeyModule.provide()).build());
     }
 
     @Override
@@ -406,16 +416,30 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
 
     @IdentifierNameString
     private static final class LazyClassKeyProvider {
-      static String com_souspantry_app_ui_pantry_PantryViewModel = "com.souspantry.app.ui.pantry.PantryViewModel";
+      static String com_souspantry_app_ui_home_HomeViewModel = "com.souspantry.app.ui.home.HomeViewModel";
+
+      static String com_souspantry_app_ui_onboarding_OnboardingViewModel = "com.souspantry.app.ui.onboarding.OnboardingViewModel";
+
+      static String com_souspantry_app_ui_settings_SettingsViewModel = "com.souspantry.app.ui.settings.SettingsViewModel";
 
       static String com_souspantry_app_ui_plancook_PlanCookViewModel = "com.souspantry.app.ui.plancook.PlanCookViewModel";
 
       static String com_souspantry_app_ui_shopping_ShoppingViewModel = "com.souspantry.app.ui.shopping.ShoppingViewModel";
 
-      static String com_souspantry_app_ui_home_HomeViewModel = "com.souspantry.app.ui.home.HomeViewModel";
+      static String com_souspantry_app_ui_pantry_BarcodeScanViewModel = "com.souspantry.app.ui.pantry.BarcodeScanViewModel";
+
+      static String com_souspantry_app_ui_pantry_ReceiptScanViewModel = "com.souspantry.app.ui.pantry.ReceiptScanViewModel";
+
+      static String com_souspantry_app_ui_pantry_PantryViewModel = "com.souspantry.app.ui.pantry.PantryViewModel";
 
       @KeepFieldType
-      PantryViewModel com_souspantry_app_ui_pantry_PantryViewModel2;
+      HomeViewModel com_souspantry_app_ui_home_HomeViewModel2;
+
+      @KeepFieldType
+      OnboardingViewModel com_souspantry_app_ui_onboarding_OnboardingViewModel2;
+
+      @KeepFieldType
+      SettingsViewModel com_souspantry_app_ui_settings_SettingsViewModel2;
 
       @KeepFieldType
       PlanCookViewModel com_souspantry_app_ui_plancook_PlanCookViewModel2;
@@ -424,7 +448,13 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
       ShoppingViewModel com_souspantry_app_ui_shopping_ShoppingViewModel2;
 
       @KeepFieldType
-      HomeViewModel com_souspantry_app_ui_home_HomeViewModel2;
+      BarcodeScanViewModel com_souspantry_app_ui_pantry_BarcodeScanViewModel2;
+
+      @KeepFieldType
+      ReceiptScanViewModel com_souspantry_app_ui_pantry_ReceiptScanViewModel2;
+
+      @KeepFieldType
+      PantryViewModel com_souspantry_app_ui_pantry_PantryViewModel2;
     }
   }
 
@@ -435,11 +465,19 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
 
     private final ViewModelCImpl viewModelCImpl = this;
 
+    private Provider<BarcodeScanViewModel> barcodeScanViewModelProvider;
+
     private Provider<HomeViewModel> homeViewModelProvider;
+
+    private Provider<OnboardingViewModel> onboardingViewModelProvider;
 
     private Provider<PantryViewModel> pantryViewModelProvider;
 
     private Provider<PlanCookViewModel> planCookViewModelProvider;
+
+    private Provider<ReceiptScanViewModel> receiptScanViewModelProvider;
+
+    private Provider<SettingsViewModel> settingsViewModelProvider;
 
     private Provider<ShoppingViewModel> shoppingViewModelProvider;
 
@@ -456,15 +494,19 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
     @SuppressWarnings("unchecked")
     private void initialize(final SavedStateHandle savedStateHandleParam,
         final ViewModelLifecycle viewModelLifecycleParam) {
-      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
-      this.pantryViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
-      this.planCookViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
-      this.shoppingViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
+      this.barcodeScanViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
+      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
+      this.onboardingViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
+      this.pantryViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
+      this.planCookViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
+      this.receiptScanViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 5);
+      this.settingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 6);
+      this.shoppingViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 7);
     }
 
     @Override
     public Map<Class<?>, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
-      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(4).put(LazyClassKeyProvider.com_souspantry_app_ui_home_HomeViewModel, ((Provider) homeViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_pantry_PantryViewModel, ((Provider) pantryViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_plancook_PlanCookViewModel, ((Provider) planCookViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_shopping_ShoppingViewModel, ((Provider) shoppingViewModelProvider)).build());
+      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(8).put(LazyClassKeyProvider.com_souspantry_app_ui_pantry_BarcodeScanViewModel, ((Provider) barcodeScanViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_home_HomeViewModel, ((Provider) homeViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_onboarding_OnboardingViewModel, ((Provider) onboardingViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_pantry_PantryViewModel, ((Provider) pantryViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_plancook_PlanCookViewModel, ((Provider) planCookViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_pantry_ReceiptScanViewModel, ((Provider) receiptScanViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_settings_SettingsViewModel, ((Provider) settingsViewModelProvider)).put(LazyClassKeyProvider.com_souspantry_app_ui_shopping_ShoppingViewModel, ((Provider) shoppingViewModelProvider)).build());
     }
 
     @Override
@@ -476,23 +518,43 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
     private static final class LazyClassKeyProvider {
       static String com_souspantry_app_ui_home_HomeViewModel = "com.souspantry.app.ui.home.HomeViewModel";
 
+      static String com_souspantry_app_ui_pantry_BarcodeScanViewModel = "com.souspantry.app.ui.pantry.BarcodeScanViewModel";
+
       static String com_souspantry_app_ui_pantry_PantryViewModel = "com.souspantry.app.ui.pantry.PantryViewModel";
+
+      static String com_souspantry_app_ui_pantry_ReceiptScanViewModel = "com.souspantry.app.ui.pantry.ReceiptScanViewModel";
+
+      static String com_souspantry_app_ui_plancook_PlanCookViewModel = "com.souspantry.app.ui.plancook.PlanCookViewModel";
+
+      static String com_souspantry_app_ui_settings_SettingsViewModel = "com.souspantry.app.ui.settings.SettingsViewModel";
 
       static String com_souspantry_app_ui_shopping_ShoppingViewModel = "com.souspantry.app.ui.shopping.ShoppingViewModel";
 
-      static String com_souspantry_app_ui_plancook_PlanCookViewModel = "com.souspantry.app.ui.plancook.PlanCookViewModel";
+      static String com_souspantry_app_ui_onboarding_OnboardingViewModel = "com.souspantry.app.ui.onboarding.OnboardingViewModel";
 
       @KeepFieldType
       HomeViewModel com_souspantry_app_ui_home_HomeViewModel2;
 
       @KeepFieldType
+      BarcodeScanViewModel com_souspantry_app_ui_pantry_BarcodeScanViewModel2;
+
+      @KeepFieldType
       PantryViewModel com_souspantry_app_ui_pantry_PantryViewModel2;
+
+      @KeepFieldType
+      ReceiptScanViewModel com_souspantry_app_ui_pantry_ReceiptScanViewModel2;
+
+      @KeepFieldType
+      PlanCookViewModel com_souspantry_app_ui_plancook_PlanCookViewModel2;
+
+      @KeepFieldType
+      SettingsViewModel com_souspantry_app_ui_settings_SettingsViewModel2;
 
       @KeepFieldType
       ShoppingViewModel com_souspantry_app_ui_shopping_ShoppingViewModel2;
 
       @KeepFieldType
-      PlanCookViewModel com_souspantry_app_ui_plancook_PlanCookViewModel2;
+      OnboardingViewModel com_souspantry_app_ui_onboarding_OnboardingViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -516,16 +578,28 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
       @Override
       public T get() {
         switch (id) {
-          case 0: // com.souspantry.app.ui.home.HomeViewModel 
+          case 0: // com.souspantry.app.ui.pantry.BarcodeScanViewModel 
+          return (T) new BarcodeScanViewModel(singletonCImpl.provideApiServiceProvider.get(), singletonCImpl.pantryRepositoryProvider.get());
+
+          case 1: // com.souspantry.app.ui.home.HomeViewModel 
           return (T) new HomeViewModel(singletonCImpl.provideApiServiceProvider.get(), singletonCImpl.pantryRepositoryProvider.get());
 
-          case 1: // com.souspantry.app.ui.pantry.PantryViewModel 
+          case 2: // com.souspantry.app.ui.onboarding.OnboardingViewModel 
+          return (T) new OnboardingViewModel(singletonCImpl.provideUserPrefsProvider.get());
+
+          case 3: // com.souspantry.app.ui.pantry.PantryViewModel 
           return (T) new PantryViewModel(singletonCImpl.pantryRepositoryProvider.get());
 
-          case 2: // com.souspantry.app.ui.plancook.PlanCookViewModel 
+          case 4: // com.souspantry.app.ui.plancook.PlanCookViewModel 
           return (T) new PlanCookViewModel(singletonCImpl.provideApiServiceProvider.get(), singletonCImpl.pantryRepositoryProvider.get());
 
-          case 3: // com.souspantry.app.ui.shopping.ShoppingViewModel 
+          case 5: // com.souspantry.app.ui.pantry.ReceiptScanViewModel 
+          return (T) new ReceiptScanViewModel(singletonCImpl.provideApiServiceProvider.get(), singletonCImpl.pantryRepositoryProvider.get());
+
+          case 6: // com.souspantry.app.ui.settings.SettingsViewModel 
+          return (T) new SettingsViewModel(singletonCImpl.provideUserPrefsProvider.get());
+
+          case 7: // com.souspantry.app.ui.shopping.ShoppingViewModel 
           return (T) new ShoppingViewModel(singletonCImpl.provideApiServiceProvider.get(), singletonCImpl.pantryRepositoryProvider.get());
 
           default: throw new AssertionError(id);
@@ -620,6 +694,8 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
 
     private Provider<PantryRepository> pantryRepositoryProvider;
 
+    private Provider<UserPreferencesRepository> provideUserPrefsProvider;
+
     private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
       initialize(applicationContextModuleParam);
@@ -634,6 +710,7 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
       this.providePantryDatabaseProvider = DoubleCheck.provider(new SwitchingProvider<PantryDatabase>(singletonCImpl, 5));
       this.providePantryDaoProvider = DoubleCheck.provider(new SwitchingProvider<PantryDao>(singletonCImpl, 4));
       this.pantryRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<PantryRepository>(singletonCImpl, 3));
+      this.provideUserPrefsProvider = DoubleCheck.provider(new SwitchingProvider<UserPreferencesRepository>(singletonCImpl, 6));
     }
 
     @Override
@@ -686,6 +763,9 @@ public final class DaggerSousPantryApp_HiltComponents_SingletonC {
 
           case 5: // com.souspantry.app.data.repository.PantryDatabase 
           return (T) DatabaseModule_ProvidePantryDatabaseFactory.providePantryDatabase(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 6: // com.souspantry.app.data.local.UserPreferencesRepository 
+          return (T) DataStoreModule_ProvideUserPrefsFactory.provideUserPrefs(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
           default: throw new AssertionError(id);
         }

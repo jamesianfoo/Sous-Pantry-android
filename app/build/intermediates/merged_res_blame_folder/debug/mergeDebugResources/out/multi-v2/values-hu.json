@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.souspantry.app-mergeDebugResources-79:/values-hu/values-hu.xml",
+            "outputFile": "com.souspantry.app-mergeDebugResources-76:/values-hu/values-hu.xml",
             "map": [
                 {
                     "source": "/Users/jf/.gradle/caches/9.0.0/transforms/290e28bf235ec19004c479d898d54ca5/transformed/play-services-basement-18.4.0/res/values-hu/values.xml",

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.souspantry.app-mergeDebugResources-79:/values-lo/values-lo.xml",
+            "outputFile": "com.souspantry.app-mergeDebugResources-76:/values-lo/values-lo.xml",
             "map": [
                 {
                     "source": "/Users/jf/.gradle/caches/9.0.0/transforms/b68874c6f4bdf237a1e102074cc6a693/transformed/foundation-release/res/values-lo/values-lo.xml",

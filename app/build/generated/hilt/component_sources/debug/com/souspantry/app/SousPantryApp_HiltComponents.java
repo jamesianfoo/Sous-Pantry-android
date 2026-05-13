@@ -1,10 +1,15 @@
 package com.souspantry.app;
 
+import com.souspantry.app.data.local.DataStoreModule;
 import com.souspantry.app.data.repository.DatabaseModule;
 import com.souspantry.app.services.NetworkModule;
 import com.souspantry.app.ui.home.HomeViewModel_HiltModules;
+import com.souspantry.app.ui.onboarding.OnboardingViewModel_HiltModules;
+import com.souspantry.app.ui.pantry.BarcodeScanViewModel_HiltModules;
 import com.souspantry.app.ui.pantry.PantryViewModel_HiltModules;
+import com.souspantry.app.ui.pantry.ReceiptScanViewModel_HiltModules;
 import com.souspantry.app.ui.plancook.PlanCookViewModel_HiltModules;
+import com.souspantry.app.ui.settings.SettingsViewModel_HiltModules;
 import com.souspantry.app.ui.shopping.ShoppingViewModel_HiltModules;
 import dagger.Binds;
 import dagger.Component;
@@ -131,6 +136,7 @@ public final class SousPantryApp_HiltComponents {
   @Component(
       modules = {
           ApplicationContextModule.class,
+          DataStoreModule.class,
           DatabaseModule.class,
           HiltWrapper_FragmentGetContextFix_FragmentGetContextFixModule.class,
           NetworkModule.class,
@@ -158,11 +164,15 @@ public final class SousPantryApp_HiltComponents {
 
   @Subcomponent(
       modules = {
+          BarcodeScanViewModel_HiltModules.KeyModule.class,
           HiltWrapper_ActivityRetainedComponentManager_LifecycleModule.class,
           HiltWrapper_SavedStateHandleModule.class,
           HomeViewModel_HiltModules.KeyModule.class,
+          OnboardingViewModel_HiltModules.KeyModule.class,
           PantryViewModel_HiltModules.KeyModule.class,
           PlanCookViewModel_HiltModules.KeyModule.class,
+          ReceiptScanViewModel_HiltModules.KeyModule.class,
+          SettingsViewModel_HiltModules.KeyModule.class,
           ShoppingViewModel_HiltModules.KeyModule.class,
           ActivityCBuilderModule.class,
           ViewModelCBuilderModule.class
@@ -201,10 +211,14 @@ public final class SousPantryApp_HiltComponents {
 
   @Subcomponent(
       modules = {
+          BarcodeScanViewModel_HiltModules.BindsModule.class,
           HiltWrapper_HiltViewModelFactory_ViewModelModule.class,
           HomeViewModel_HiltModules.BindsModule.class,
+          OnboardingViewModel_HiltModules.BindsModule.class,
           PantryViewModel_HiltModules.BindsModule.class,
           PlanCookViewModel_HiltModules.BindsModule.class,
+          ReceiptScanViewModel_HiltModules.BindsModule.class,
+          SettingsViewModel_HiltModules.BindsModule.class,
           ShoppingViewModel_HiltModules.BindsModule.class
       }
   )

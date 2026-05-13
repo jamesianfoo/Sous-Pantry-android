@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.souspantry.app-mergeDebugResources-79:/values-land/values-land.xml",
+            "outputFile": "com.souspantry.app-mergeDebugResources-76:/values-land/values-land.xml",
             "map": [
                 {
                     "source": "/Users/jf/.gradle/caches/9.0.0/transforms/15dbb3b1cbc9197df64509692d9ec0d5/transformed/appcompat-1.6.1/res/values-land/values-land.xml",
