@@ -20,6 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.souspantry.app.ui.home.HomeScreen
 import com.souspantry.app.ui.pantry.BarcodeScanScreen
 import com.souspantry.app.ui.pantry.PantryScreen
+import com.souspantry.app.ui.pantry.ReceiptScanScreen
 import com.souspantry.app.ui.plancook.PlanCookScreen
 import com.souspantry.app.ui.settings.SettingsScreen
 import com.souspantry.app.ui.shopping.ShoppingScreen
@@ -96,7 +97,12 @@ fun SousPantryNavHost() {
                     onSaved   = { navController.popBackStack() },
                 )
             }
-            composable(Screen.Receipt.route)  { /* Task 5 — ReceiptScanScreen */ }
+            composable(Screen.Receipt.route) {
+                ReceiptScanScreen(
+                    onDismiss = { navController.popBackStack() },
+                    onSaved   = { navController.popBackStack() },
+                )
+            }
             composable(Screen.Onboarding.route) { /* Task 9 — OnboardingScreen */ }
             composable(Screen.Auth.route)     { /* Task 7 — AuthScreen */ }
             composable(Screen.Paywall.route)  { /* Task 8 — PaywallScreen */ }
