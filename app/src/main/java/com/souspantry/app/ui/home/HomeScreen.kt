@@ -146,7 +146,7 @@ private fun SectionError(onRetry: () -> Unit) {
 
 @Composable
 private fun RecipeCard(title: String, description: String, imageQuery: String, badge: String? = null) {
-    val imageUrl = "https://source.unsplash.com/400x300/?${imageQuery.replace(" ", "+")},food"
+    val imageUrl = "https://loremflickr.com/400/300/${imageQuery.replace(" ", ",")},food"
 
     Card(
         modifier = Modifier.width(200.dp),

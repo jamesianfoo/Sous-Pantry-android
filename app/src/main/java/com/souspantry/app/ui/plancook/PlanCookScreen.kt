@@ -109,7 +109,7 @@ fun PlanCookScreen(vm: PlanCookViewModel = hiltViewModel()) {
 @Composable
 private fun MealCard(meal: SuggestedMeal) {
     var expanded by remember { mutableStateOf(false) }
-    val imageUrl = "https://source.unsplash.com/400x300/?${meal.imageQuery.replace(" ", "+")},food"
+    val imageUrl = "https://loremflickr.com/400/300/${meal.imageQuery.replace(" ", ",")},food"
 
     Card(
         modifier  = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
