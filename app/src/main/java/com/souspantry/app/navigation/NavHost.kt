@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.souspantry.app.ui.home.HomeScreen
+import com.souspantry.app.ui.pantry.BarcodeScanScreen
 import com.souspantry.app.ui.pantry.PantryScreen
 import com.souspantry.app.ui.plancook.PlanCookScreen
 import com.souspantry.app.ui.settings.SettingsScreen
@@ -82,11 +83,19 @@ fun SousPantryNavHost() {
             modifier         = Modifier.padding(innerPadding),
         ) {
             composable(Screen.Home.route)     { HomeScreen(onNavigateToSettings = { navController.navigate(Screen.Settings.route) }) }
-            composable(Screen.Pantry.route)   { PantryScreen() }
+            composable(Screen.Pantry.route)   { PantryScreen(
+                onBarcodeScan = { navController.navigate(Screen.Barcode.route) },
+                onReceiptScan = { navController.navigate(Screen.Receipt.route) },
+            ) }
             composable(Screen.PlanCook.route) { PlanCookScreen() }
             composable(Screen.Shopping.route) { ShoppingScreen() }
             composable(Screen.Settings.route) { SettingsScreen(onBack = { navController.popBackStack() }) }
-            composable(Screen.Barcode.route)  { /* Task 4 — BarcodeScanScreen */ }
+            composable(Screen.Barcode.route) {
+                BarcodeScanScreen(
+                    onDismiss = { navController.popBackStack() },
+                    onSaved   = { navController.popBackStack() },
+                )
+            }
             composable(Screen.Receipt.route)  { /* Task 5 — ReceiptScanScreen */ }
             composable(Screen.Onboarding.route) { /* Task 9 — OnboardingScreen */ }
             composable(Screen.Auth.route)     { /* Task 7 — AuthScreen */ }

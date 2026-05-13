@@ -8,8 +8,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.material3.SwipeToDismissBoxValue.*
 import androidx.compose.runtime.*
@@ -18,13 +21,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun PantryScreen(vm: PantryViewModel = hiltViewModel()) {
+fun PantryScreen(
+    onBarcodeScan : () -> Unit = {},
+    onReceiptScan : () -> Unit = {},
+    vm            : PantryViewModel = hiltViewModel(),
+) {
+    val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA)
+    LaunchedEffect(Unit) { if (!cameraPermission.status.isGranted) cameraPermission.launchPermissionRequest() }
+
     val items    by vm.items.collectAsState(initial = emptyList())
     var showAdd  by remember { mutableStateOf(false) }
     var editItem by remember { mutableStateOf<PantryItem?>(null) }
@@ -34,12 +48,24 @@ fun PantryScreen(vm: PantryViewModel = hiltViewModel()) {
     Scaffold(
         containerColor = Cream,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick          = { showAdd = true },
-                containerColor   = Green,
-                contentColor     = Color.White,
-                shape            = CircleShape,
-            ) { Icon(Icons.Filled.Add, "Add item") }
+            var menuOpen by remember { mutableStateOf(false) }
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (menuOpen) {
+                    SmallFloatingActionButton(onClick = { showAdd = true; menuOpen = false }, containerColor = Navy, contentColor = Color.White) {
+                        Icon(Icons.Filled.Edit, "Manual add")
+                    }
+                    SmallFloatingActionButton(onClick = { onReceiptScan(); menuOpen = false }, containerColor = Navy, contentColor = Color.White) {
+                        Icon(Icons.Filled.Receipt, "Receipt")
+                    }
+                    SmallFloatingActionButton(onClick = { onBarcodeScan(); menuOpen = false }, containerColor = Navy, contentColor = Color.White) {
+                        Icon(Icons.Filled.QrCodeScanner, "Barcode")
+                    }
+                }
+                FloatingActionButton(
+                    onClick = { menuOpen = !menuOpen },
+                    containerColor = Green, contentColor = Color.White, shape = CircleShape,
+                ) { Icon(if (menuOpen) Icons.Filled.Close else Icons.Filled.Add, if (menuOpen) "Close" else "Menu") }
+            }
         }
     ) { padding ->
         LazyColumn(
