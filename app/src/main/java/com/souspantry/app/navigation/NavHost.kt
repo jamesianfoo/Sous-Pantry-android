@@ -27,7 +27,7 @@ import com.souspantry.app.ui.pantry.BarcodeScanScreen
 import com.souspantry.app.ui.pantry.PantryScreen
 import com.souspantry.app.ui.pantry.ReceiptScanScreen
 import com.souspantry.app.ui.plancook.PlanCookScreen
-import com.souspantry.app.ui.settings.SettingsScreen
+import com.souspantry.app.ui.account.AccountScreen
 import com.souspantry.app.ui.shopping.ShoppingScreen
 import com.souspantry.app.ui.theme.Green
 import com.souspantry.app.ui.theme.White
@@ -98,7 +98,7 @@ fun SousPantryNavHost() {
             ) }
             composable(Screen.PlanCook.route) { PlanCookScreen() }
             composable(Screen.Shopping.route) { ShoppingScreen() }
-            composable(Screen.Account.route)  { SettingsScreen() }
+            composable(Screen.Account.route)  { AccountScreen() }
             composable(Screen.Barcode.route) {
                 BarcodeScanScreen(
                     onDismiss = { navController.popBackStack() },

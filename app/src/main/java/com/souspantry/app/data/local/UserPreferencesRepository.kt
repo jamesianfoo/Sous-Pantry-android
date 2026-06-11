@@ -22,13 +22,41 @@ class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     companion object {
+        // Identity
         val KEY_DEVICE_ID        = stringPreferencesKey("device_id")
         val KEY_USER_NAME        = stringPreferencesKey("user_name")
+        val KEY_USER_EMAIL       = stringPreferencesKey("user_email")
         val KEY_ONBOARDING_DONE  = booleanPreferencesKey("onboarding_done")
-        val KEY_NOTIF_ENABLED    = booleanPreferencesKey("notif_enabled")
+
+        // Notifications (global + per-category)
+        val KEY_NOTIF_ENABLED       = booleanPreferencesKey("notif_enabled")
+        val KEY_ALERT_EXPIRING      = booleanPreferencesKey("alert_expiring")
+        val KEY_ALERT_RECEIPT       = booleanPreferencesKey("alert_receipt")
+        val KEY_ALERT_PANTRY_STALE  = booleanPreferencesKey("alert_pantry_stale")
+
+        // Account / profile
+        val KEY_GENDER              = stringPreferencesKey("gender")
+        val KEY_COOKING_FOR         = intPreferencesKey("cooking_for")
+
+        // Measurement
+        val KEY_MEASUREMENT_SYSTEM  = stringPreferencesKey("measurement_system") // "metric" | "imperial"
+        val KEY_TEMPERATURE_UNIT    = stringPreferencesKey("temperature_unit")   // "celsius" | "fahrenheit"
+
+        // Dietary
+        val KEY_DIETARY_TYPES       = stringSetPreferencesKey("dietary_types")
+        val KEY_FOOD_RESTRICTIONS   = stringSetPreferencesKey("food_restrictions")
+        val KEY_AVOID_INGREDIENTS   = stringSetPreferencesKey("avoid_ingredients")
+
+        // Customisation
+        val KEY_RECOMMENDED_SUBS    = booleanPreferencesKey("recommended_subs")
+        val KEY_SOUS_AI_ENABLED     = booleanPreferencesKey("sous_ai_enabled")
+
+        // Supabase session (stage 2)
         val KEY_SUPABASE_TOKEN   = stringPreferencesKey("supabase_token")
         val KEY_SUPABASE_USER_ID = stringPreferencesKey("supabase_user_id")
     }
+
+    // ── Reads ────────────────────────────────────────────────────────────────
 
     val deviceId: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[KEY_DEVICE_ID] ?: UUID.randomUUID().toString().also { id ->
@@ -36,15 +64,55 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
-    val userName: Flow<String>        = context.dataStore.data.map { it[KEY_USER_NAME]       ?: "" }
-    val onboardingDone: Flow<Boolean> = context.dataStore.data.map { it[KEY_ONBOARDING_DONE] ?: false }
-    val notifEnabled: Flow<Boolean>   = context.dataStore.data.map { it[KEY_NOTIF_ENABLED]   ?: true }
-    val supabaseToken: Flow<String?>  = context.dataStore.data.map { it[KEY_SUPABASE_TOKEN] }
-    val supabaseUserId: Flow<String?> = context.dataStore.data.map { it[KEY_SUPABASE_USER_ID] }
+    val userName: Flow<String>         = context.dataStore.data.map { it[KEY_USER_NAME]        ?: "" }
+    val userEmail: Flow<String>        = context.dataStore.data.map { it[KEY_USER_EMAIL]       ?: "" }
+    val onboardingDone: Flow<Boolean>  = context.dataStore.data.map { it[KEY_ONBOARDING_DONE]  ?: false }
 
-    suspend fun setUserName(name: String)         = context.dataStore.edit { it[KEY_USER_NAME]       = name }
-    suspend fun setOnboardingDone()               = context.dataStore.edit { it[KEY_ONBOARDING_DONE] = true }
-    suspend fun setNotifEnabled(on: Boolean)      = context.dataStore.edit { it[KEY_NOTIF_ENABLED]   = on }
+    val notifEnabled: Flow<Boolean>      = context.dataStore.data.map { it[KEY_NOTIF_ENABLED]      ?: true }
+    val alertExpiring: Flow<Boolean>     = context.dataStore.data.map { it[KEY_ALERT_EXPIRING]     ?: true }
+    val alertReceipt: Flow<Boolean>      = context.dataStore.data.map { it[KEY_ALERT_RECEIPT]      ?: true }
+    val alertPantryStale: Flow<Boolean>  = context.dataStore.data.map { it[KEY_ALERT_PANTRY_STALE] ?: true }
+
+    val gender: Flow<String>           = context.dataStore.data.map { it[KEY_GENDER]           ?: "" }
+    val cookingFor: Flow<Int>          = context.dataStore.data.map { it[KEY_COOKING_FOR]      ?: 2 }
+
+    val measurementSystem: Flow<String> = context.dataStore.data.map { it[KEY_MEASUREMENT_SYSTEM] ?: "metric" }
+    val temperatureUnit: Flow<String>   = context.dataStore.data.map { it[KEY_TEMPERATURE_UNIT]   ?: "celsius" }
+
+    val dietaryTypes: Flow<Set<String>>     = context.dataStore.data.map { it[KEY_DIETARY_TYPES]     ?: emptySet() }
+    val foodRestrictions: Flow<Set<String>> = context.dataStore.data.map { it[KEY_FOOD_RESTRICTIONS] ?: emptySet() }
+    val avoidIngredients: Flow<Set<String>> = context.dataStore.data.map { it[KEY_AVOID_INGREDIENTS] ?: emptySet() }
+
+    val recommendedSubs: Flow<Boolean> = context.dataStore.data.map { it[KEY_RECOMMENDED_SUBS] ?: true }
+    val sousAIEnabled: Flow<Boolean>   = context.dataStore.data.map { it[KEY_SOUS_AI_ENABLED]  ?: true }
+
+    val supabaseToken: Flow<String?>   = context.dataStore.data.map { it[KEY_SUPABASE_TOKEN] }
+    val supabaseUserId: Flow<String?>  = context.dataStore.data.map { it[KEY_SUPABASE_USER_ID] }
+
+    // ── Writes ───────────────────────────────────────────────────────────────
+
+    suspend fun setUserName(name: String)             = context.dataStore.edit { it[KEY_USER_NAME]  = name }
+    suspend fun setUserEmail(email: String)           = context.dataStore.edit { it[KEY_USER_EMAIL] = email }
+    suspend fun setOnboardingDone()                   = context.dataStore.edit { it[KEY_ONBOARDING_DONE] = true }
+
+    suspend fun setNotifEnabled(on: Boolean)          = context.dataStore.edit { it[KEY_NOTIF_ENABLED]      = on }
+    suspend fun setAlertExpiring(on: Boolean)         = context.dataStore.edit { it[KEY_ALERT_EXPIRING]     = on }
+    suspend fun setAlertReceipt(on: Boolean)          = context.dataStore.edit { it[KEY_ALERT_RECEIPT]      = on }
+    suspend fun setAlertPantryStale(on: Boolean)      = context.dataStore.edit { it[KEY_ALERT_PANTRY_STALE] = on }
+
+    suspend fun setGender(value: String)              = context.dataStore.edit { it[KEY_GENDER]      = value }
+    suspend fun setCookingFor(count: Int)             = context.dataStore.edit { it[KEY_COOKING_FOR] = count.coerceIn(1, 12) }
+
+    suspend fun setMeasurementSystem(value: String)   = context.dataStore.edit { it[KEY_MEASUREMENT_SYSTEM] = value }
+    suspend fun setTemperatureUnit(value: String)     = context.dataStore.edit { it[KEY_TEMPERATURE_UNIT]   = value }
+
+    suspend fun setDietaryTypes(values: Set<String>)     = context.dataStore.edit { it[KEY_DIETARY_TYPES]     = values }
+    suspend fun setFoodRestrictions(values: Set<String>) = context.dataStore.edit { it[KEY_FOOD_RESTRICTIONS] = values }
+    suspend fun setAvoidIngredients(values: Set<String>) = context.dataStore.edit { it[KEY_AVOID_INGREDIENTS] = values }
+
+    suspend fun setRecommendedSubs(on: Boolean)       = context.dataStore.edit { it[KEY_RECOMMENDED_SUBS] = on }
+    suspend fun setSousAIEnabled(on: Boolean)         = context.dataStore.edit { it[KEY_SOUS_AI_ENABLED]  = on }
+
     suspend fun setSupabaseSession(token: String, userId: String) = context.dataStore.edit {
         it[KEY_SUPABASE_TOKEN]   = token
         it[KEY_SUPABASE_USER_ID] = userId
@@ -52,6 +120,14 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun clearSupabaseSession() = context.dataStore.edit {
         it.remove(KEY_SUPABASE_TOKEN)
         it.remove(KEY_SUPABASE_USER_ID)
+    }
+
+    /** Wipes every user-set preference. Used by Delete Account / Log Out flows. */
+    suspend fun clearAll() = context.dataStore.edit { prefs ->
+        // Keep deviceId stable across resets so FCM / analytics still work.
+        val keepDeviceId = prefs[KEY_DEVICE_ID]
+        prefs.clear()
+        if (keepDeviceId != null) prefs[KEY_DEVICE_ID] = keepDeviceId
     }
 }
 
