@@ -91,7 +91,17 @@ fun SousPantryNavHost() {
             startDestination = startDest,
             modifier         = Modifier.padding(innerPadding),
         ) {
-            composable(Screen.Home.route)     { HomeScreen() }
+            composable(Screen.Home.route)     {
+                HomeScreen(
+                    onNavigateToTab = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState    = true
+                        }
+                    },
+                )
+            }
             composable(Screen.Pantry.route)   { PantryScreen(
                 onBarcodeScan = { navController.navigate(Screen.Barcode.route) },
                 onReceiptScan = { navController.navigate(Screen.Receipt.route) },
