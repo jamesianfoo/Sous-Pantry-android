@@ -2,6 +2,7 @@ package com.souspantry.app.ui.plancook
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.souspantry.app.data.local.UserPreferencesRepository
 import com.souspantry.app.data.models.SuggestedMeal
 import com.souspantry.app.data.repository.PantryRepository
 import com.souspantry.app.services.ApiService
@@ -12,77 +13,213 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.UUID
 import javax.inject.Inject
 
-enum class PlanTab { RECIPES, MY_WEEK, SAVED }
+// ── Plan & Cook page model ───────────────────────────────────────────────────
+
+enum class PlanTab { DISCOVER, SAVED_RECIPES, MY_RECIPES, MY_PLANS }
+
+enum class ChatRole { USER, ASSISTANT }
+
+sealed interface ChatMessage {
+    val id   : String
+    val role : ChatRole
+
+    data class Text(
+        override val id   : String = UUID.randomUUID().toString(),
+        override val role : ChatRole,
+        val content       : String,
+    ) : ChatMessage
+
+    /** Assistant intro line + a list of clickable recipe cards. */
+    data class RecipeList(
+        override val id   : String = UUID.randomUUID().toString(),
+        override val role : ChatRole = ChatRole.ASSISTANT,
+        val intro         : String,
+        val recipes       : List<SuggestedMeal>,
+    ) : ChatMessage
+}
 
 data class PlanCookState(
-    val meals             : List<SuggestedMeal> = emptyList(),
-    val loading           : Boolean             = false,
-    val error             : String?             = null,
-    val selectedTab       : PlanTab             = PlanTab.RECIPES,
-    val selectedMood      : String?             = null,        // "Quick Meal" | "Dinner in 30 Mins" | …
-    val selectedCuisines  : Set<String>         = emptySet(),
-    val expandedMealId    : String?             = null,
+    val selectedTab      : PlanTab             = PlanTab.DISCOVER,
+    val messages         : List<ChatMessage>   = emptyList(),
+    val inputText        : String              = "",
+    val isLoading        : Boolean             = false,
+    val selectedMoods    : Set<String>         = emptySet(),
+    val selectedCuisines : Set<String>         = emptySet(),
+    val pantryCount      : Int                 = 0,
+    val userName         : String              = "",
+    val error            : String?             = null,
 )
 
 @HiltViewModel
 class PlanCookViewModel @Inject constructor(
-    private val api  : ApiService,
-    private val repo : PantryRepository,
+    private val api   : ApiService,
+    private val repo  : PantryRepository,
+    private val prefs : UserPreferencesRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PlanCookState())
     val state = _state.asStateFlow()
 
     private var generationJob: Job? = null
+    private var hasGreeted = false
+
+    init {
+        viewModelScope.launch {
+            val name        = prefs.userName.first()
+            val pantryItems = repo.items.first()
+            _state.update { it.copy(userName = name, pantryCount = pantryItems.size) }
+            sendGreeting()
+        }
+    }
 
     // ── Tab + filter writes ─────────────────────────────────────────────────
 
     fun selectTab(tab: PlanTab) = _state.update { it.copy(selectedTab = tab) }
 
-    fun setMood(mood: String?) = _state.update { it.copy(selectedMood = mood) }
-
-    fun toggleCuisine(cuisine: String) = _state.update { s ->
+    fun toggleMood(mood: String) = _state.update { s ->
         s.copy(
-            selectedCuisines = if (s.selectedCuisines.contains(cuisine))
-                s.selectedCuisines - cuisine
-            else s.selectedCuisines + cuisine
+            selectedMoods = if (s.selectedMoods.contains(mood)) s.selectedMoods - mood
+                            else                                 s.selectedMoods + mood
         )
     }
 
-    fun clearCuisines() = _state.update { it.copy(selectedCuisines = emptySet()) }
-
-    fun toggleExpanded(mealTitle: String) = _state.update { s ->
-        s.copy(expandedMealId = if (s.expandedMealId == mealTitle) null else mealTitle)
+    fun toggleCuisine(cuisine: String) = _state.update { s ->
+        s.copy(
+            selectedCuisines = if (s.selectedCuisines.contains(cuisine)) s.selectedCuisines - cuisine
+                                else                                       s.selectedCuisines + cuisine
+        )
     }
 
-    // ── Generation ──────────────────────────────────────────────────────────
+    fun setInputText(value: String) = _state.update { it.copy(inputText = value) }
 
-    fun generate() {
-        generationJob?.cancel()
-        generationJob = viewModelScope.launch {
-            _state.update { it.copy(loading = true, error = null) }
-            val s         = _state.value
-            val pantryItems = repo.items.first()
-            val body: MutableMap<String, Any> = mutableMapOf(
-                "pantryItems" to pantryItems.map { mapOf("name" to it.name, "category" to (it.category ?: "")) },
-            )
-            s.selectedMood?.let     { body["mood"]     = it }
-            if (s.selectedCuisines.isNotEmpty()) body["cuisines"] = s.selectedCuisines.toList()
+    // ── Greeting + reset ────────────────────────────────────────────────────
 
-            runCatching { api.generateMeals(body) }
-                .onSuccess { meals -> _state.update { it.copy(meals = meals, loading = false) } }
-                .onFailure {         _state.update { it.copy(error = "Couldn't generate meal plan. Try again.", loading = false) } }
+    fun sendGreeting() {
+        if (hasGreeted) return
+        hasGreeted = true
+        viewModelScope.launch {
+            val first   = _state.value.userName.split(" ").firstOrNull()?.takeIf { it.isNotBlank() } ?: "there"
+            val pantry  = _state.value.pantryCount
+            val mealLbl = currentMealLabel()
+            val greeting = buildString {
+                append(timeGreeting()).append(" ").append(first).append("! ")
+                if (pantry > 0) {
+                    append("You've got $pantry item${if (pantry == 1) "" else "s"} in your pantry. ")
+                }
+                append("What are you thinking for ").append(mealLbl).append("?")
+            }
+            appendAssistant(ChatMessage.Text(role = ChatRole.ASSISTANT, content = greeting))
+
+            // Then fetch 3 starter recipes from the backend
+            runCatching { api.fetchSuggestedMeals(emptyMap()) }
+                .onSuccess { meals ->
+                    val pick = meals.take(3)
+                    if (pick.isNotEmpty()) {
+                        appendAssistant(
+                            ChatMessage.RecipeList(
+                                intro   = "Here's ${pick.size} thing${if (pick.size == 1) "" else "s"} you can make right now with what's in your pantry:",
+                                recipes = pick,
+                            )
+                        )
+                    }
+                }
+                // Silent on failure — keep greeting visible, just don't show cards
         }
     }
 
-    fun cancelGeneration() {
+    fun startOver() {
         generationJob?.cancel()
-        _state.update { it.copy(loading = false) }
+        hasGreeted = false
+        _state.update {
+            it.copy(
+                messages         = emptyList(),
+                inputText        = "",
+                isLoading        = false,
+                selectedMoods    = emptySet(),
+                selectedCuisines = emptySet(),
+                error            = null,
+            )
+        }
+        sendGreeting()
     }
 
-    fun reset() = _state.update {
-        it.copy(meals = emptyList(), error = null, selectedMood = null, selectedCuisines = emptySet(), expandedMealId = null)
+    // ── Send a user message + fetch assistant recipes ───────────────────────
+
+    fun sendMessage(text: String = _state.value.inputText) {
+        val trimmed = text.trim()
+        if (trimmed.isBlank() || _state.value.isLoading) return
+
+        // 1) Echo user bubble
+        _state.update {
+            it.copy(
+                messages  = it.messages + ChatMessage.Text(role = ChatRole.USER, content = trimmed),
+                inputText = "",
+                isLoading = true,
+                error     = null,
+            )
+        }
+
+        generationJob?.cancel()
+        generationJob = viewModelScope.launch {
+            val items = repo.items.first()
+            val body: MutableMap<String, Any> = mutableMapOf(
+                "pantryItems" to items.map { mapOf("name" to it.name, "category" to (it.category ?: "")) },
+                "userMessage" to trimmed,
+            )
+            val moods    = _state.value.selectedMoods
+            val cuisines = _state.value.selectedCuisines
+            if (moods.isNotEmpty())    body["moods"]    = moods.toList()
+            if (cuisines.isNotEmpty()) body["cuisines"] = cuisines.toList()
+
+            runCatching { api.generateMeals(body) }
+                .onSuccess { meals ->
+                    val pick = meals.take(3)
+                    if (pick.isEmpty()) {
+                        appendAssistant(ChatMessage.Text(
+                            role = ChatRole.ASSISTANT,
+                            content = "I couldn't find a match for that — try a different mood or cuisine?",
+                        ))
+                    } else {
+                        appendAssistant(ChatMessage.RecipeList(
+                            intro   = "Here's what I'd suggest:",
+                            recipes = pick,
+                        ))
+                    }
+                    _state.update { it.copy(isLoading = false) }
+                }
+                .onFailure {
+                    appendAssistant(ChatMessage.Text(
+                        role = ChatRole.ASSISTANT,
+                        content = "I'm having trouble reaching the kitchen brain right now. Try again in a moment.",
+                    ))
+                    _state.update { it.copy(isLoading = false, error = "Network error") }
+                }
+        }
+    }
+
+    fun cancelSend() {
+        generationJob?.cancel()
+        _state.update { it.copy(isLoading = false) }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    private fun appendAssistant(msg: ChatMessage) = _state.update { it.copy(messages = it.messages + msg) }
+
+    private fun timeGreeting(): String = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 5..11  -> "Good morning"
+        in 12..16 -> "Good afternoon"
+        else      -> "Good evening"
+    }
+
+    private fun currentMealLabel(): String = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 5..10  -> "breakfast"
+        in 11..14 -> "lunch"
+        in 15..17 -> "an afternoon snack"
+        else      -> "dinner"
     }
 }
