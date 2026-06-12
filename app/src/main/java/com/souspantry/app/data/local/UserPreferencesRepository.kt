@@ -54,6 +54,9 @@ class UserPreferencesRepository @Inject constructor(
         // Supabase session (stage 2)
         val KEY_SUPABASE_TOKEN   = stringPreferencesKey("supabase_token")
         val KEY_SUPABASE_USER_ID = stringPreferencesKey("supabase_user_id")
+
+        // Debug override — only honoured in debug builds (gated at read-site).
+        val KEY_FORCE_PREMIUM    = booleanPreferencesKey("debug_force_premium")
     }
 
     // ── Reads ────────────────────────────────────────────────────────────────
@@ -89,6 +92,8 @@ class UserPreferencesRepository @Inject constructor(
     val supabaseToken: Flow<String?>   = context.dataStore.data.map { it[KEY_SUPABASE_TOKEN] }
     val supabaseUserId: Flow<String?>  = context.dataStore.data.map { it[KEY_SUPABASE_USER_ID] }
 
+    val forcePremium: Flow<Boolean>    = context.dataStore.data.map { it[KEY_FORCE_PREMIUM] ?: false }
+
     // ── Writes ───────────────────────────────────────────────────────────────
 
     suspend fun setUserName(name: String)             = context.dataStore.edit { it[KEY_USER_NAME]  = name }
@@ -112,6 +117,8 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun setRecommendedSubs(on: Boolean)       = context.dataStore.edit { it[KEY_RECOMMENDED_SUBS] = on }
     suspend fun setSousAIEnabled(on: Boolean)         = context.dataStore.edit { it[KEY_SOUS_AI_ENABLED]  = on }
+
+    suspend fun setForcePremium(on: Boolean)          = context.dataStore.edit { it[KEY_FORCE_PREMIUM] = on }
 
     suspend fun setSupabaseSession(token: String, userId: String) = context.dataStore.edit {
         it[KEY_SUPABASE_TOKEN]   = token

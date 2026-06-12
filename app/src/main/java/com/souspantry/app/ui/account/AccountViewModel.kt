@@ -30,6 +30,7 @@ data class AccountState(
     val sousAIEnabled       : Boolean     = true,
     val deviceId            : String      = "",
     val isPremium           : Boolean     = false, // TODO: wire to BillingManager (Task 8)
+    val forcePremium        : Boolean     = false, // Debug-only override
 )
 
 @HiltViewModel
@@ -59,8 +60,8 @@ class AccountViewModel @Inject constructor(
     ) { expiring, receipt, stale -> Triple(expiring, receipt, stale) }
 
     private val customisationState = combine(
-        prefs.recommendedSubs, prefs.sousAIEnabled,
-    ) { subs, sousAi -> subs to sousAi }
+        prefs.recommendedSubs, prefs.sousAIEnabled, prefs.forcePremium,
+    ) { subs, sousAi, forcePremium -> Triple(subs, sousAi, forcePremium) }
 
     val state: StateFlow<AccountState> = combine(
         identityState, unitsState, dietState, notifState, customisationState,
@@ -76,6 +77,8 @@ class AccountViewModel @Inject constructor(
             alertPantryStale  = notif.third,
             recommendedSubs   = cust.first,
             sousAIEnabled     = cust.second,
+            forcePremium      = cust.third,
+            isPremium         = cust.third, // Real subscription wiring lands in Task 8; for now this is the only source of premium-truthiness.
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountState())
 
@@ -94,6 +97,7 @@ class AccountViewModel @Inject constructor(
     fun setAlertPantryStale(on: Boolean)   = viewModelScope.launch { prefs.setAlertPantryStale(on) }
     fun setRecommendedSubs(on: Boolean)    = viewModelScope.launch { prefs.setRecommendedSubs(on) }
     fun setSousAIEnabled(on: Boolean)      = viewModelScope.launch { prefs.setSousAIEnabled(on) }
+    fun setForcePremium(on: Boolean)       = viewModelScope.launch { prefs.setForcePremium(on) }
 
     // ── Account-action stubs ────────────────────────────────────────────────
 

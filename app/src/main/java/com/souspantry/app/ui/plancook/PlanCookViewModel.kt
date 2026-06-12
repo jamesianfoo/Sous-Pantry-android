@@ -52,6 +52,7 @@ data class PlanCookState(
     val pantryCount      : Int                 = 0,
     val userName         : String              = "",
     val error            : String?             = null,
+    val isPremium        : Boolean             = false,
 )
 
 @HiltViewModel
@@ -73,6 +74,12 @@ class PlanCookViewModel @Inject constructor(
             val pantryItems = repo.items.first()
             _state.update { it.copy(userName = name, pantryCount = pantryItems.size) }
             sendGreeting()
+        }
+        // Live-update the premium flag whenever the debug toggle flips.
+        viewModelScope.launch {
+            prefs.forcePremium.collect { force ->
+                _state.update { it.copy(isPremium = force) }
+            }
         }
     }
 

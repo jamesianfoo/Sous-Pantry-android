@@ -2,6 +2,7 @@ package com.souspantry.app.ui.account
 
 import android.content.Intent
 import android.net.Uri
+import com.souspantry.app.BuildConfig
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -69,36 +70,63 @@ fun AccountScreen(vm: AccountViewModel = hiltViewModel()) {
 
             // ── Premium ───────────────────────────────────────
             SectionCard {
-                Row(
-                    modifier          = Modifier.fillMaxWidth().padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier         = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Gold.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center,
+                Column {
+                    Row(
+                        modifier          = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Filled.WorkspacePremium, null, tint = Gold, modifier = Modifier.size(24.dp))
-                    }
-                    Spacer(Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Sous Pantry Premium", color = Navy, fontWeight = FontWeight.SemiBold)
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(if (state.isPremium) "Active" else "Free", color = Slate, fontSize = 12.sp)
-                            if (!state.isPremium) {
-                                Surface(
-                                    shape    = RoundedCornerShape(4.dp),
-                                    color    = Green,
-                                    modifier = Modifier.clickable { /* TODO: paywall — Task 8 */ },
-                                ) {
-                                    Text(
-                                        "Upgrade",
-                                        color      = Color.White,
-                                        fontSize   = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier   = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
-                                    )
+                        Box(
+                            modifier         = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Gold.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Filled.WorkspacePremium, null, tint = Gold, modifier = Modifier.size(24.dp))
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Sous Pantry Premium", color = Navy, fontWeight = FontWeight.SemiBold)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(if (state.isPremium) "Active" else "Free", color = Slate, fontSize = 12.sp)
+                                if (!state.isPremium) {
+                                    Surface(
+                                        shape    = RoundedCornerShape(4.dp),
+                                        color    = Green,
+                                        modifier = Modifier.clickable { /* TODO: paywall — Task 8 */ },
+                                    ) {
+                                        Text(
+                                            "Upgrade",
+                                            color      = Color.White,
+                                            fontSize   = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier   = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                                        )
+                                    }
                                 }
                             }
+                        }
+                    }
+                    // Debug-only Force Premium toggle (compiled out of release builds)
+                    if (BuildConfig.DEBUG) {
+                        Divider()
+                        Row(
+                            modifier          = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Debug: Force Premium", color = Color(0xFFE65100), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Bypasses billing — unlocks every Pro tab locally.",
+                                    color    = Slate,
+                                    fontSize = 11.sp,
+                                )
+                            }
+                            Switch(
+                                checked         = state.forcePremium,
+                                onCheckedChange = { vm.setForcePremium(it) },
+                                colors          = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFFE65100),
+                                ),
+                            )
                         }
                     }
                 }

@@ -50,16 +50,19 @@ fun PlanCookScreen(vm: PlanCookViewModel = hiltViewModel()) {
             onHistoryTap       = { /* TODO: history sheet */ },
             onStartOver        = { vm.startOver() },
         )
-        PillTabBar(selected = state.selectedTab, onSelect = vm::selectTab)
+        PillTabBar(selected = state.selectedTab, isPremium = state.isPremium, onSelect = vm::selectTab)
 
         when (state.selectedTab) {
             PlanTab.DISCOVER      -> DiscoverTab(state = state, vm = vm)
-            PlanTab.SAVED_RECIPES -> PremiumLockState(feature = "Saved Recipes",
-                description = "Bookmark your favourite recipes and access them anytime.")
-            PlanTab.MY_RECIPES    -> PremiumLockState(feature = "My Recipes",
-                description = "Edit, personalise, and save your own versions of any recipe.")
-            PlanTab.MY_PLANS      -> PremiumLockState(feature = "My Plans",
-                description = "Schedule meals for the whole week with AI-powered planning.")
+            PlanTab.SAVED_RECIPES -> if (state.isPremium) ProTabPlaceholder("Saved Recipes", "Tap the bookmark on any recipe to save it here.")
+                                    else PremiumLockState(feature = "Saved Recipes",
+                                        description = "Bookmark your favourite recipes and access them anytime.")
+            PlanTab.MY_RECIPES    -> if (state.isPremium) ProTabPlaceholder("My Recipes", "Your edited and personalised recipes will appear here.")
+                                    else PremiumLockState(feature = "My Recipes",
+                                        description = "Edit, personalise, and save your own versions of any recipe.")
+            PlanTab.MY_PLANS      -> if (state.isPremium) ProTabPlaceholder("My Plans", "Weekly meal plans will appear here once you add some.")
+                                    else PremiumLockState(feature = "My Plans",
+                                        description = "Schedule meals for the whole week with AI-powered planning.")
         }
     }
 }
@@ -116,7 +119,7 @@ private fun Header(
 // ── Pill tab bar (4 tabs) ────────────────────────────────────────────────────
 
 @Composable
-private fun PillTabBar(selected: PlanTab, onSelect: (PlanTab) -> Unit) {
+private fun PillTabBar(selected: PlanTab, isPremium: Boolean, onSelect: (PlanTab) -> Unit) {
     val tabs = listOf(
         PlanTab.DISCOVER      to "Discover",
         PlanTab.SAVED_RECIPES to "Saved Recipes",
@@ -129,7 +132,7 @@ private fun PillTabBar(selected: PlanTab, onSelect: (PlanTab) -> Unit) {
     ) {
         tabs.forEach { (tab, label) ->
             val isOn   = tab == selected
-            val locked = tab != PlanTab.DISCOVER
+            val locked = tab != PlanTab.DISCOVER && !isPremium
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -434,6 +437,25 @@ private fun MoodPill(label: String, isSelected: Boolean, onClick: () -> Unit) {
             fontWeight = FontWeight.SemiBold,
             modifier   = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
         )
+    }
+}
+
+// ── Pro tab placeholder (unlocked, but empty until persistence ships) ────────
+
+@Composable
+private fun ProTabPlaceholder(title: String, body: String) {
+    Box(
+        modifier         = Modifier.fillMaxSize().padding(40.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(title, color = Navy, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            Text(body, color = Slate, fontSize = 13.sp, textAlign = TextAlign.Center)
+            Text("Nothing here yet", color = Slate.copy(alpha = 0.6f), fontSize = 12.sp)
+        }
     }
 }
 
