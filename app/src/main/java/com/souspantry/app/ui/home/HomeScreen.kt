@@ -1,5 +1,6 @@
 package com.souspantry.app.ui.home
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,16 +28,28 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.foundation.Canvas
 import coil.compose.AsyncImage
+import com.souspantry.app.R
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.data.models.SuggestedMeal
 import com.souspantry.app.ui.theme.*
 import java.util.Calendar
+
+// ── Color palette for donut chart (mirrors iOS) ──────────────────────────────
+private val DONUT_PALETTE = listOf(
+    Color(0xFF2D5A3D), // Green
+    Color(0xFF162437), // Navy
+    Color(0xFFC4965A), // Gold
+    Color(0xFFFF9800), // Orange
+    Color(0xFF8C3FBF), // Purple (iOS rgb(0.55, 0.25, 0.75))
+)
+
+private val LIME_HIGHLIGHT = Color(0xFF2CFF05)
 
 @Composable
 fun HomeScreen(
@@ -44,7 +59,7 @@ fun HomeScreen(
     val state by vm.state.collectAsState()
 
     Column(
-        modifier            = Modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(Cream)
             .verticalScroll(rememberScrollState()),
@@ -68,6 +83,7 @@ fun HomeScreen(
                 onAddItems          = { onNavigateToTab("pantry") },
                 onSeeWhatToCook     = { onNavigateToTab("plancook") },
                 onViewShopping      = { onNavigateToTab("shopping") },
+                onPriceTrendsTap    = { /* Price Trends sheet — future */ },
             )
 
             if (state.pantryItems.isNotEmpty()) {
@@ -77,6 +93,11 @@ fun HomeScreen(
                     atRiskCount       = state.auditItems.size,
                 )
             }
+
+            CookingStreakCard(
+                mealsThisWeek    = 0,        // TODO: wire to a future cooking-history store
+                totalMealsCooked = 0,
+            )
 
             // Suggested recipes — keeps the existing API wiring
             SuggestedSection(
@@ -89,7 +110,7 @@ fun HomeScreen(
     }
 }
 
-// ── Hero ─────────────────────────────────────────────────────────────────────
+// ── Hero (full-bleed vegetable image + cream gradient overlay) ───────────────
 
 @Composable
 private fun HeroSection(userName: String) {
@@ -107,13 +128,33 @@ private fun HeroSection(userName: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp)
-            .background(
-                Brush.verticalGradient(
-                    listOf(SoftMint.copy(alpha = 0.6f), Cream),
-                ),
-            ),
+            .height(330.dp),
     ) {
+        // 1. Vegetable backdrop (full-bleed, top edge to bottom)
+        androidx.compose.foundation.Image(
+            painter            = painterResource(id = R.drawable.hero_vegetables),
+            contentDescription = null,
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier.fillMaxSize(),
+        )
+
+        // 2. Cream gradient overlay — image fades into the cream background.
+        //    Inverse of iOS overlay stops: 35% at top → 65% middle → 100% bottom.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Cream.copy(alpha = 0.35f),
+                            0.5f to Cream.copy(alpha = 0.65f),
+                            1.0f to Cream,
+                        ),
+                    ),
+                ),
+        )
+
+        // 3. Greeting block — bottom-left of hero
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -182,7 +223,7 @@ private fun AuditRow(item: PantryItem) {
     }
 }
 
-// ── Recent Haul (Navy card with CTAs) ────────────────────────────────────────
+// ── Recent Haul (Navy card with CTAs + Price Trends row) ─────────────────────
 
 @Composable
 private fun RecentHaulCard(
@@ -191,6 +232,7 @@ private fun RecentHaulCard(
     onAddItems          : () -> Unit,
     onSeeWhatToCook     : () -> Unit,
     onViewShopping      : () -> Unit,
+    onPriceTrendsTap    : () -> Unit,
 ) {
     val mealLabel = remember {
         when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
@@ -199,7 +241,6 @@ private fun RecentHaulCard(
             else      -> "TONIGHT'S DINNER"
         }
     }
-    val lime = Color(0xFF2CFF04)
 
     Surface(
         modifier        = Modifier.fillMaxWidth(),
@@ -207,54 +248,91 @@ private fun RecentHaulCard(
         color           = Navy,
         shadowElevation = 12.dp,
     ) {
-        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            // Title row
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("🛒", fontSize = 22.sp)
-                Spacer(Modifier.width(8.dp))
-                Text("Recent Haul", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.weight(1f))
-                if (!pantryIsEmpty) {
-                    Surface(
-                        shape    = CircleShape,
-                        color    = lime.copy(alpha = 0.15f),
-                        modifier = Modifier,
-                    ) {
-                        Text(
-                            mealLabel,
-                            color      = lime,
-                            fontSize   = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier   = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                        )
+        Column {
+            // ── Top section ──────────────────────────────────────
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                // Title row
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🛒", fontSize = 22.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Recent Haul", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.weight(1f))
+                    if (!pantryIsEmpty) {
+                        Surface(
+                            shape    = CircleShape,
+                            color    = LIME_HIGHLIGHT.copy(alpha = 0.15f),
+                        ) {
+                            Text(
+                                mealLabel,
+                                color      = LIME_HIGHLIGHT,
+                                fontSize   = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier   = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                            )
+                        }
                     }
+                }
+
+                // Subtitle
+                Text(
+                    if (pantryIsEmpty) "No scan recorded yet." else "Last recipe scan was yesterday.",
+                    color    = Color.White,
+                    fontSize = 12.sp,
+                )
+
+                if (pantryIsEmpty) {
+                    Text(
+                        "Let's get you started",
+                        color      = Color.White,
+                        fontSize   = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    CtaButton(label = "Add new items →",      primary = true,  onClick = onAddItems)
+                    CtaButton(label = "View shopping list →", primary = false, onClick = onViewShopping)
+                } else {
+                    Text(
+                        "$estimatedMealCount meals you could cook right now. Hungry?",
+                        color      = Color.White,
+                        fontSize   = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    CtaButton(label = "See what to cook →", primary = true, onClick = onSeeWhatToCook)
                 }
             }
 
-            // Subtitle
-            Text(
-                "No scan recorded yet.",
-                color    = Color.White,
-                fontSize = 12.sp,
-            )
-
-            if (pantryIsEmpty) {
-                Text(
-                    "Let's get you started",
-                    color      = Color.White,
-                    fontSize   = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                CtaButton(label = "Add new items →", primary = true,  onClick = onAddItems)
-                CtaButton(label = "View shopping list →", primary = false, onClick = onViewShopping)
-            } else {
-                Text(
-                    "$estimatedMealCount meals you could cook right now. Hungry?",
-                    color      = Color.White,
-                    fontSize   = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                CtaButton(label = "See what to cook →", primary = true, onClick = onSeeWhatToCook)
+            // ── Price Trends row (hidden when empty) ─────────────
+            if (!pantryIsEmpty) {
+                HorizontalDivider(thickness = 1.dp, color = Color.White.copy(alpha = 0.12f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onPriceTrendsTap)
+                        .padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Icon(Icons.Filled.TrendingUp, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "PRICE TRENDS",
+                            color      = Color.White.copy(alpha = 0.5f),
+                            fontSize   = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            "Tap to see spend insights",
+                            color    = Color.White.copy(alpha = 0.9f),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                    Icon(
+                        Icons.Filled.ChevronRight,
+                        contentDescription = null,
+                        tint               = Color.White.copy(alpha = 0.4f),
+                        modifier           = Modifier.size(18.dp),
+                    )
+                }
             }
         }
     }
@@ -322,7 +400,7 @@ private fun PantryHealthCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     DonutChart(
-                        segments  = categoryBreakdown.take(4).mapIndexed { idx, (_, frac, _) -> frac to donutColor(idx) },
+                        segments  = categoryBreakdown.take(5).mapIndexed { idx, (_, frac, _) -> frac to DONUT_PALETTE[idx % DONUT_PALETTE.size] },
                         strokeDp  = 18,
                         baseColor = SoftMint,
                     )
@@ -338,7 +416,7 @@ private fun PantryHealthCard(
                 ) {
                     categoryBreakdown.take(4).forEachIndexed { idx, (name, frac, _) ->
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(donutColor(idx)))
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(DONUT_PALETTE[idx % DONUT_PALETTE.size]))
                             Text(name, color = Navy, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 1)
                             Text("${(frac * 100).toInt()}%", color = Slate, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         }
@@ -362,13 +440,6 @@ private fun PantryHealthCard(
     }
 }
 
-private fun donutColor(idx: Int): Color = when (idx) {
-    0 -> Color(0xFF2D5A3D) // Green
-    1 -> Color(0xFFC4965A) // Gold
-    2 -> Color(0xFF647080) // Slate
-    else -> Color(0xFFE3EDE6) // SoftMint
-}
-
 @Composable
 private fun DonutChart(
     segments  : List<Pair<Float, Color>>,
@@ -382,7 +453,7 @@ private fun DonutChart(
 
         // Base ring
         drawArc(
-            color     = baseColor,
+            color      = baseColor,
             startAngle = 0f,
             sweepAngle = 360f,
             useCenter  = false,
@@ -407,6 +478,130 @@ private fun DonutChart(
             start += sweep
         }
     }
+}
+
+// ── Cooking Streak card ──────────────────────────────────────────────────────
+
+@Composable
+private fun CookingStreakCard(
+    mealsThisWeek    : Int,
+    totalMealsCooked : Int,
+) {
+    Surface(
+        modifier        = Modifier.fillMaxWidth().shadow(
+            elevation    = 6.dp,
+            shape        = RoundedCornerShape(16.dp),
+            ambientColor = Navy.copy(alpha = 0.08f),
+            spotColor    = Navy.copy(alpha = 0.08f),
+        ),
+        shape           = RoundedCornerShape(16.dp),
+        color           = Color.White,
+    ) {
+        Column(
+            modifier            = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            // Title row + optional streak flame (≥3 days)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🍳", fontSize = 18.sp)
+                Spacer(Modifier.width(6.dp))
+                Text("Cooking streak", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                // Flame pill placeholder — wire to streak service later
+                if (mealsThisWeek >= 3) {
+                    Surface(shape = CircleShape, color = Color(0xFFFF9800).copy(alpha = 0.12f)) {
+                        Row(
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            modifier              = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.LocalFireDepartment, null,
+                                tint     = Color(0xFFFF9800),
+                                modifier = Modifier.size(12.dp),
+                            )
+                            Text(
+                                "$mealsThisWeek day${if (mealsThisWeek == 1) "" else "s"}",
+                                color      = Color(0xFFFF9800),
+                                fontSize   = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Meals cooked this week
+            Text(
+                "$mealsThisWeek meal${if (mealsThisWeek == 1) "" else "s"} cooked this week",
+                color      = Navy,
+                fontSize   = 15.sp,
+                fontWeight = FontWeight.Bold,
+            )
+
+            // Savings chip (placeholder $4.50 per meal heuristic — wire later)
+            val savings = mealsThisWeek * 4.50
+            Surface(shape = CircleShape, color = SoftMint) {
+                Text(
+                    "~ $${"%.2f".format(savings)} saved from eating out",
+                    color      = Green,
+                    fontSize   = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+
+            // Progress toward next badge — placeholder progress bar + goal text
+            val (fraction, goalText) = nextBadgeInfo(totalMealsCooked)
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.dp)
+                        .clip(CircleShape)
+                        .background(Slate.copy(alpha = 0.15f)),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                            .fillMaxHeight()
+                            .clip(CircleShape)
+                            .background(Green),
+                    )
+                }
+                Text(goalText, color = Slate, fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+/** Mirrors iOS badge ladder. Returns (progressFraction, goalText). */
+private fun nextBadgeInfo(total: Int): Pair<Float, String> {
+    val ladder = listOf(
+        5    to "Home Cook 🏅",
+        20   to "Super Home Cook 🏆",
+        40   to "Amazing Home Cook ⭐",
+        60   to "Stellar Chef 🌿",
+        80   to "Executive Chef 🌿",
+        100  to "Head Chef 🌿",
+        120  to "Culinary Master 🌿",
+        150  to "Master Chef 🌿",
+        200  to "Top Chef 🌿",
+        250  to "Grand Master Chef 👑",
+        500  to "Legendary Chef 👑",
+        1500 to "Super Legendary Chef 👑",
+        3000 to "Grand Legendary Chef 👑",
+    )
+    val nextIdx = ladder.indexOfFirst { total < it.first }
+    if (nextIdx == -1) {
+        return 1.0f to "You've reached the top — legend!"
+    }
+    val next      = ladder[nextIdx]
+    val prevNeed  = if (nextIdx == 0) 0 else ladder[nextIdx - 1].first
+    val remaining = next.first - total
+    val range     = (next.first - prevNeed).coerceAtLeast(1).toFloat()
+    val frac      = ((total - prevNeed).coerceAtLeast(0).toFloat()) / range
+    return frac to "$remaining more meal${if (remaining == 1) "" else "s"} to ${next.second}"
 }
 
 // ── Suggested recipes carousel ───────────────────────────────────────────────
