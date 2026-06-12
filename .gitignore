@@ -11,3 +11,9 @@ captures/
 *.keystore
 !debug.keystore
 google-services.json
+
+# Backend — secrets and generated files
+backend/.env
+backend/node_modules/
+backend/promoCodes.json
+backend/redeemedCodes.json
