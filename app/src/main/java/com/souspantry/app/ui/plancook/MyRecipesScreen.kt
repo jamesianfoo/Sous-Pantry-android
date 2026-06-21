@@ -3,6 +3,14 @@ package com.souspantry.app.ui.plancook
 import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.core.content.ContextCompat
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.souspantry.app.ui.camera.CameraPreview
+import java.io.File
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -43,10 +51,10 @@ import com.souspantry.app.ui.theme.*
 
 enum class EditorMode { VIEW, EDIT }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MyRecipesScreen(
-    onScanCamera : () -> Unit = {},
-    vm           : MyRecipesViewModel = hiltViewModel(),
+    vm : MyRecipesViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsState()
     val context = LocalContext.current
@@ -55,6 +63,10 @@ fun MyRecipesScreen(
     var editorMode   by remember { mutableStateOf(EditorMode.VIEW) }
     var pendingDelete by remember { mutableStateOf<MyRecipe?>(null) }
     var fabExpanded  by remember { mutableStateOf(false) }
+    var showCamera   by remember { mutableStateOf(false) }
+    var pendingCamera by remember { mutableStateOf(false) }
+
+    val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA)
 
     // Photo-library picker → decode → OCR + parse
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -75,6 +87,15 @@ fun MyRecipesScreen(
             editorRecipe = it
             editorMode   = EditorMode.EDIT
             vm.consumeScannedDraft()
+        }
+    }
+
+    // If the user tapped "New Scan" before granting camera access, open the
+    // camera once the system permission prompt is approved.
+    LaunchedEffect(cameraPermission.status.isGranted) {
+        if (cameraPermission.status.isGranted && pendingCamera) {
+            pendingCamera = false
+            showCamera = true
         }
     }
 
@@ -121,7 +142,13 @@ fun MyRecipesScreen(
                     fabExpanded = false; galleryLauncher.launch("image/*")
                 }
                 FabOption("New Scan", Icons.Filled.CameraAlt) {
-                    fabExpanded = false; onScanCamera()
+                    fabExpanded = false
+                    if (cameraPermission.status.isGranted) {
+                        showCamera = true
+                    } else {
+                        pendingCamera = true
+                        cameraPermission.launchPermissionRequest()
+                    }
                 }
                 FabOption("Write from Scratch", Icons.Filled.Edit) {
                     fabExpanded = false
@@ -185,6 +212,17 @@ fun MyRecipesScreen(
         }
     }
 
+    // ── Camera capture overlay ────────────────────────────────────────────────
+    if (showCamera) {
+        RecipeCameraCapture(
+            onDismiss  = { showCamera = false },
+            onCaptured = { bitmap ->
+                showCamera = false
+                vm.scanFromBitmap(bitmap)
+            },
+        )
+    }
+
     // ── Editor ──────────────────────────────────────────────────────────────
     editorRecipe?.let { recipe ->
         RecipeEditorSheet(
@@ -220,6 +258,73 @@ fun MyRecipesScreen(
             text             = { Text(msg) },
             containerColor   = Color.White,
         )
+    }
+}
+
+// ── Camera capture (full-screen) ──────────────────────────────────────────────
+
+@Composable
+private fun RecipeCameraCapture(
+    onDismiss  : () -> Unit,
+    onCaptured : (android.graphics.Bitmap) -> Unit,
+) {
+    val context  = LocalContext.current
+    var capture  by remember { mutableStateOf<ImageCapture?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        CameraPreview(
+            modifier      = Modifier.fillMaxSize(),
+            onCameraReady = { capture = it },
+        )
+
+        // Close button
+        IconButton(
+            onClick  = onDismiss,
+            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+        ) {
+            Icon(Icons.Filled.Close, "Close", tint = Color.White)
+        }
+
+        // Hint
+        Surface(
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp),
+            shape    = RoundedCornerShape(12.dp),
+            color    = Color.Black.copy(alpha = 0.6f),
+        ) {
+            Text(
+                "Point at a recipe and tap capture",
+                color    = Color.White,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            )
+        }
+
+        // Capture button
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 48.dp)
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(Green)
+                .clickable {
+                    val file    = File(context.cacheDir, "recipe_${System.currentTimeMillis()}.jpg")
+                    val options = ImageCapture.OutputFileOptions.Builder(file).build()
+                    capture?.takePicture(
+                        options,
+                        ContextCompat.getMainExecutor(context),
+                        object : ImageCapture.OnImageSavedCallback {
+                            override fun onImageSaved(out: ImageCapture.OutputFileResults) {
+                                BitmapFactory.decodeFile(file.absolutePath)?.let(onCaptured)
+                            }
+                            override fun onError(e: ImageCaptureException) { /* surfaced as scan error on retry */ }
+                        },
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.CameraAlt, "Capture", tint = Color.White, modifier = Modifier.size(32.dp))
+        }
     }
 }
 
