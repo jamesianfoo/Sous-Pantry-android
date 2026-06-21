@@ -89,3 +89,15 @@ data class BarcodeResult(
     val quantity: String?,
     val imageUrl: String?,
 )
+
+data class ScannedRecipe(
+    val name        : String,
+    val description : String?      = null,
+    val cuisine     : String?      = null,
+    val difficulty  : String?      = null,
+    val prepTime    : String?      = null,
+    val cookTime    : String?      = null,
+    val servings    : Int?         = null,
+    val ingredients : List<String> = emptyList(),
+    val steps       : List<String> = emptyList(),
+)

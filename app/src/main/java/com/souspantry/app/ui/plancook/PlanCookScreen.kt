@@ -64,7 +64,7 @@ fun PlanCookScreen(
             PlanTab.SAVED_RECIPES -> if (state.isPremium) ProTabPlaceholder("Saved Recipes", "Tap the bookmark on any recipe to save it here.")
                                     else PremiumLockState(feature = "Saved Recipes",
                                         description = "Bookmark your favourite recipes and access them anytime.")
-            PlanTab.MY_RECIPES    -> if (state.isPremium) ProTabPlaceholder("My Recipes", "Your edited and personalised recipes will appear here.")
+            PlanTab.MY_RECIPES    -> if (state.isPremium) MyRecipesScreen()
                                     else PremiumLockState(feature = "My Recipes",
                                         description = "Edit, personalise, and save your own versions of any recipe.")
             PlanTab.MY_PLANS      -> if (state.isPremium) MyPlansScreen(pantryItems = state.pantryItems, vm = plansVm)

@@ -49,4 +49,13 @@ function parseJsonArray(text) {
   return JSON.parse(clean);
 }
 
-module.exports = { callClaude, parseJsonArray };
+/**
+ * Parse a JSON object out of Claude's response,
+ * tolerating markdown fences that Claude sometimes emits.
+ */
+function parseJsonObject(text) {
+  const clean = text.replace(/^```[a-z]*\n?/i, '').replace(/```$/i, '').trim();
+  return JSON.parse(clean);
+}
+
+module.exports = { callClaude, parseJsonArray, parseJsonObject };

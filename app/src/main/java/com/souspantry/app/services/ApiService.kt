@@ -51,4 +51,9 @@ interface ApiService {
 
     @GET("api/barcode/{code}")
     suspend fun lookupBarcode(@Path("code") code: String): BarcodeResult
+
+    // ── Recipe scan ─────────────────────────────────────────────────────────
+
+    @POST("api/recipe/scan-text")
+    suspend fun scanRecipeText(@Body body: Map<String, String>): ScannedRecipe
 }

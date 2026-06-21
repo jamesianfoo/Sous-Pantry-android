@@ -7,6 +7,7 @@ const receiptRoutes   = require('./routes/receipt');
 const mealsRoutes     = require('./routes/meals');
 const shoppingRoutes  = require('./routes/shopping');
 const barcodeRoutes   = require('./routes/barcode');
+const recipeRoutes    = require('./routes/recipe');
 const promoRoutes     = require('./routes/promo');
 const aiRoutes        = require('./routes/ai');
 
@@ -31,6 +32,7 @@ app.use('/api/receipt',       receiptRoutes);
 app.use('/api/meals',         mealsRoutes);
 app.use('/api/shopping',      shoppingRoutes);
 app.use('/api/barcode',       barcodeRoutes);
+app.use('/api/recipe',        recipeRoutes);
 
 // Authenticated routes — require a valid Supabase access token.
 app.use('/api/ai',            aiRoutes);                // requireAuth applied per-route inside
