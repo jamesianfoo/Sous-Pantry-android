@@ -12,11 +12,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Eco
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,10 +47,12 @@ private val MOOD_OPTIONS = listOf(
 
 @Composable
 fun PlanCookScreen(
-    vm        : PlanCookViewModel = hiltViewModel(),
-    plansVm   : MyPlansViewModel  = viewModel(),
+    vm        : PlanCookViewModel    = hiltViewModel(),
+    plansVm   : MyPlansViewModel     = viewModel(),
+    savedVm   : SavedRecipesViewModel = viewModel(),
 ) {
-    val state by vm.state.collectAsState()
+    val state    by vm.state.collectAsState()
+    val savedState by savedVm.state.collectAsState()
     var addToWeekMeal by remember { mutableStateOf<SuggestedMeal?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().background(Cream)) {
@@ -60,8 +64,14 @@ fun PlanCookScreen(
         PillTabBar(selected = state.selectedTab, isPremium = state.isPremium, onSelect = vm::selectTab)
 
         when (state.selectedTab) {
-            PlanTab.DISCOVER      -> DiscoverTab(state = state, vm = vm, onAddToWeek = { addToWeekMeal = it })
-            PlanTab.SAVED_RECIPES -> if (state.isPremium) ProTabPlaceholder("Saved Recipes", "Tap the bookmark on any recipe to save it here.")
+            PlanTab.DISCOVER      -> DiscoverTab(
+                state          = state,
+                vm             = vm,
+                onAddToWeek    = { addToWeekMeal = it },
+                isSaved        = { savedState.recipes.any { r -> r.title.equals(it.title.trim(), ignoreCase = true) } },
+                onToggleSaved  = { savedVm.toggle(it) },
+            )
+            PlanTab.SAVED_RECIPES -> if (state.isPremium) SavedRecipesScreen(vm = savedVm)
                                     else PremiumLockState(feature = "Saved Recipes",
                                         description = "Bookmark your favourite recipes and access them anytime.")
             PlanTab.MY_RECIPES    -> if (state.isPremium) MyRecipesScreen()
@@ -189,7 +199,13 @@ private fun PillTabBar(selected: PlanTab, isPremium: Boolean, onSelect: (PlanTab
 // ── Discover tab (chat) ──────────────────────────────────────────────────────
 
 @Composable
-private fun DiscoverTab(state: PlanCookState, vm: PlanCookViewModel, onAddToWeek: (SuggestedMeal) -> Unit) {
+private fun DiscoverTab(
+    state         : PlanCookState,
+    vm            : PlanCookViewModel,
+    onAddToWeek   : (SuggestedMeal) -> Unit,
+    isSaved       : (SuggestedMeal) -> Boolean,
+    onToggleSaved : (SuggestedMeal) -> Unit,
+) {
     val listState = rememberLazyListState()
 
     // Auto-scroll to bottom whenever a new message arrives
@@ -206,7 +222,12 @@ private fun DiscoverTab(state: PlanCookState, vm: PlanCookViewModel, onAddToWeek
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             items(state.messages.size, key = { state.messages[it].id }) { idx ->
-                MessageRow(message = state.messages[idx], onAddToWeek = onAddToWeek)
+                MessageRow(
+                    message       = state.messages[idx],
+                    onAddToWeek   = onAddToWeek,
+                    isSaved       = isSaved,
+                    onToggleSaved = onToggleSaved,
+                )
             }
             if (state.isLoading) {
                 item(key = "loading") { LoadingBubble() }
@@ -226,16 +247,23 @@ private fun DiscoverTab(state: PlanCookState, vm: PlanCookViewModel, onAddToWeek
 // ── Message rendering ────────────────────────────────────────────────────────
 
 @Composable
-private fun MessageRow(message: ChatMessage, onAddToWeek: (SuggestedMeal) -> Unit) {
+private fun MessageRow(
+    message       : ChatMessage,
+    onAddToWeek   : (SuggestedMeal) -> Unit,
+    isSaved       : (SuggestedMeal) -> Boolean,
+    onToggleSaved : (SuggestedMeal) -> Unit,
+) {
     when (message) {
         is ChatMessage.Text -> when (message.role) {
             ChatRole.ASSISTANT -> AssistantTextBubble(text = message.content)
             ChatRole.USER      -> UserBubble(text = message.content)
         }
         is ChatMessage.RecipeList -> AssistantRecipeListBubble(
-            intro       = message.intro,
-            recipes     = message.recipes,
-            onAddToWeek = onAddToWeek,
+            intro         = message.intro,
+            recipes       = message.recipes,
+            onAddToWeek   = onAddToWeek,
+            isSaved       = isSaved,
+            onToggleSaved = onToggleSaved,
         )
     }
 }
@@ -291,9 +319,11 @@ private fun UserBubble(text: String) {
 
 @Composable
 private fun AssistantRecipeListBubble(
-    intro       : String,
-    recipes     : List<SuggestedMeal>,
-    onAddToWeek : (SuggestedMeal) -> Unit,
+    intro         : String,
+    recipes       : List<SuggestedMeal>,
+    onAddToWeek   : (SuggestedMeal) -> Unit,
+    isSaved       : (SuggestedMeal) -> Boolean,
+    onToggleSaved : (SuggestedMeal) -> Unit,
 ) {
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         AssistantAvatar()
@@ -306,13 +336,14 @@ private fun AssistantRecipeListBubble(
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(intro, color = Navy, fontSize = 15.sp)
                 recipes.forEach { recipe ->
+                    val saved = isSaved(recipe)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape    = RoundedCornerShape(12.dp),
                         color    = Cream,
                     ) {
                         Row(
-                            modifier          = Modifier.padding(start = 14.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+                            modifier          = Modifier.padding(start = 14.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
@@ -322,8 +353,16 @@ private fun AssistantRecipeListBubble(
                                 fontWeight = FontWeight.SemiBold,
                                 modifier   = Modifier.weight(1f),
                             )
+                            // Bookmark (save to Saved Recipes)
+                            IconButton(onClick = { onToggleSaved(recipe) }, modifier = Modifier.size(40.dp)) {
+                                Icon(
+                                    imageVector        = if (saved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                    contentDescription = if (saved) "Saved" else "Save recipe",
+                                    tint               = if (saved) Gold else Slate,
+                                )
+                            }
                             // Add to my week
-                            IconButton(onClick = { onAddToWeek(recipe) }) {
+                            IconButton(onClick = { onAddToWeek(recipe) }, modifier = Modifier.size(40.dp)) {
                                 Icon(Icons.Filled.CalendarMonth, "Add to my week", tint = Green)
                             }
                         }
