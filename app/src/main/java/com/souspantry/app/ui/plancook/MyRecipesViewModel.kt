@@ -7,10 +7,14 @@ import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.souspantry.app.data.repository.MyRecipeRepository
 import com.souspantry.app.services.ApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -27,44 +31,55 @@ data class MyRecipesState(
     val scannedDraft : MyRecipe?      = null,
 )
 
+/** Transient (non-persisted) UI flags layered on top of the persisted recipe list. */
+private data class TransientState(
+    val scanning     : Boolean   = false,
+    val scanError    : String?   = null,
+    val toastVisible : Boolean   = false,
+    val scannedDraft : MyRecipe? = null,
+)
+
 @HiltViewModel
 class MyRecipesViewModel @Inject constructor(
-    private val api : ApiService,
+    private val api  : ApiService,
+    private val repo : MyRecipeRepository,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(MyRecipesState())
-    val state = _state.asStateFlow()
+    private val _transient = MutableStateFlow(TransientState())
+
+    val state: StateFlow<MyRecipesState> = combine(repo.recipes, _transient) { recipes, t ->
+        MyRecipesState(
+            recipes      = recipes,
+            scanning     = t.scanning,
+            scanError    = t.scanError,
+            toastVisible = t.toastVisible,
+            scannedDraft = t.scannedDraft,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MyRecipesState())
 
     // ── CRUD ─────────────────────────────────────────────────────────────────
 
     fun save(recipe: MyRecipe) {
-        _state.update { s ->
-            val existing = s.recipes.indexOfFirst { it.id == recipe.id }
-            val updated  = if (existing >= 0)
-                s.recipes.toMutableList().apply { set(existing, recipe) }
-            else
-                s.recipes + recipe
-            s.copy(recipes = updated)
-        }
+        viewModelScope.launch { repo.upsert(recipe) }
         showToast()
     }
 
-    fun duplicate(recipe: MyRecipe) {
-        val copy = recipe.copy(
-            id        = java.util.UUID.randomUUID().toString(),
-            title     = "Copy of ${recipe.title}",
-            createdAt = System.currentTimeMillis(),
+    fun duplicate(recipe: MyRecipe) = viewModelScope.launch {
+        repo.upsert(
+            recipe.copy(
+                id        = java.util.UUID.randomUUID().toString(),
+                title     = "Copy of ${recipe.title}",
+                createdAt = System.currentTimeMillis(),
+            )
         )
-        _state.update { it.copy(recipes = listOf(copy) + it.recipes) }
     }
 
-    fun remove(id: String) =
-        _state.update { it.copy(recipes = it.recipes.filterNot { r -> r.id == id }) }
+    fun remove(id: String) = viewModelScope.launch { repo.delete(id) }
 
     // ── Scan (OCR on-device → backend parse) ─────────────────────────────────
 
     fun scanFromBitmap(bitmap: Bitmap) = viewModelScope.launch {
-        _state.update { it.copy(scanning = true, scanError = null) }
+        _transient.update { it.copy(scanning = true, scanError = null) }
         runCatching {
             val text = recogniseText(bitmap)
             Log.d("RecipeScan", "OCR extracted ${text.length} chars")
@@ -84,18 +99,18 @@ class MyRecipesViewModel @Inject constructor(
                     servings     = parsed.servings ?: 2,
                     source       = MyRecipeSource.PHOTO_SCAN,
                 )
-                _state.update { it.copy(scanning = false, scannedDraft = draft) }
+                _transient.update { it.copy(scanning = false, scannedDraft = draft) }
             }
             .onFailure { e ->
                 Log.e("RecipeScan", "Recipe scan failed", e)
                 val msg = e.message?.takeIf { it.isNotBlank() && it.length < 200 }
                     ?: "Couldn't read that recipe. Try again."
-                _state.update { it.copy(scanning = false, scanError = msg) }
+                _transient.update { it.copy(scanning = false, scanError = msg) }
             }
     }
 
-    fun consumeScannedDraft() = _state.update { it.copy(scannedDraft = null) }
-    fun clearScanError()      = _state.update { it.copy(scanError = null) }
+    fun consumeScannedDraft() = _transient.update { it.copy(scannedDraft = null) }
+    fun clearScanError()      = _transient.update { it.copy(scanError = null) }
 
     private suspend fun recogniseText(bitmap: Bitmap): String =
         suspendCancellableCoroutine { cont ->
@@ -108,10 +123,10 @@ class MyRecipesViewModel @Inject constructor(
     // ── Toast ────────────────────────────────────────────────────────────────
 
     private fun showToast() {
-        _state.update { it.copy(toastVisible = true) }
+        _transient.update { it.copy(toastVisible = true) }
         viewModelScope.launch {
             kotlinx.coroutines.delay(2000)
-            _state.update { it.copy(toastVisible = false) }
+            _transient.update { it.copy(toastVisible = false) }
         }
     }
 }

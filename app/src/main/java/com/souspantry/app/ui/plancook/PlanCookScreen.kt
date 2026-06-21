@@ -33,7 +33,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.souspantry.app.data.models.SuggestedMeal
 import com.souspantry.app.data.repository.PantryRepository
 import com.souspantry.app.ui.theme.*
@@ -47,9 +46,9 @@ private val MOOD_OPTIONS = listOf(
 
 @Composable
 fun PlanCookScreen(
-    vm        : PlanCookViewModel    = hiltViewModel(),
-    plansVm   : MyPlansViewModel     = viewModel(),
-    savedVm   : SavedRecipesViewModel = viewModel(),
+    vm        : PlanCookViewModel     = hiltViewModel(),
+    plansVm   : MyPlansViewModel      = hiltViewModel(),
+    savedVm   : SavedRecipesViewModel = hiltViewModel(),
 ) {
     val state    by vm.state.collectAsState()
     val savedState by savedVm.state.collectAsState()

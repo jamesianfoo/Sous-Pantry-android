@@ -1,16 +1,18 @@
 package com.souspantry.app.ui.plancook
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.souspantry.app.data.models.SuggestedMeal
 import java.time.LocalDate
 import java.util.UUID
 
 /**
  * A meal scheduled on a specific date in "My Plans".
- * Mirrors iOS WeekMealEntry (SwiftData model).
- * Stored in-memory via MyPlansViewModel; Room persistence is a future step.
+ * Mirrors iOS WeekMealEntry (SwiftData model). Persisted via Room.
  */
+@Entity(tableName = "week_meal_entries")
 data class WeekMealEntry(
-    val id           : String       = UUID.randomUUID().toString(),
+    @PrimaryKey val id : String     = UUID.randomUUID().toString(),
     val title        : String,
     val description  : String       = "",
     val cuisine      : String       = "",

@@ -1,16 +1,18 @@
 package com.souspantry.app.ui.plancook
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.souspantry.app.data.models.SuggestedMeal
 import java.util.UUID
 
 /**
  * A recipe the user bookmarked from a Sous AI suggestion.
  * Distinct from MyRecipe (user-authored) — this just stores the AI suggestion
- * so it can be revisited. Mirrors iOS SavedRecipe (SwiftData).
- * Stored in-memory via SavedRecipesViewModel; Room persistence is a future step.
+ * so it can be revisited. Mirrors iOS SavedRecipe (SwiftData). Persisted via Room.
  */
+@Entity(tableName = "saved_recipes")
 data class SavedRecipe(
-    val id           : String       = UUID.randomUUID().toString(),
+    @PrimaryKey val id : String     = UUID.randomUUID().toString(),
     val title        : String,
     val description  : String       = "",
     val cuisine      : String       = "",

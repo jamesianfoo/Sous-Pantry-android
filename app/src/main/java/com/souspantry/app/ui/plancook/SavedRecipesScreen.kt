@@ -26,12 +26,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.souspantry.app.ui.theme.*
 
 @Composable
-fun SavedRecipesScreen(vm: SavedRecipesViewModel = viewModel()) {
+fun SavedRecipesScreen(vm: SavedRecipesViewModel = hiltViewModel()) {
     val state by vm.state.collectAsState()
 
     var detailRecipe  by remember { mutableStateOf<SavedRecipe?>(null) }

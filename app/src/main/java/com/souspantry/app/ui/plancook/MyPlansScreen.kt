@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.ui.theme.*
 import java.time.LocalDate
@@ -41,7 +41,7 @@ import java.util.Locale
 @Composable
 fun MyPlansScreen(
     pantryItems : List<PantryItem> = emptyList(),
-    vm          : MyPlansViewModel = viewModel(),
+    vm          : MyPlansViewModel = hiltViewModel(),
 ) {
     val state      by vm.state.collectAsState()
     val weekDates   = vm.weekDates()

@@ -1,36 +1,39 @@
 package com.souspantry.app.ui.plancook
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.souspantry.app.data.models.SuggestedMeal
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import com.souspantry.app.data.repository.SavedRecipeRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class SavedRecipesState(
     val recipes : List<SavedRecipe> = emptyList(),
 )
 
-/**
- * Plain ViewModel (no Hilt) — hoisted at PlanCookScreen so the Discover tab's
- * bookmark button and the Saved Recipes tab share one in-memory store.
- */
-class SavedRecipesViewModel : ViewModel() {
+@HiltViewModel
+class SavedRecipesViewModel @Inject constructor(
+    private val repo: SavedRecipeRepository,
+) : ViewModel() {
 
-    private val _state = MutableStateFlow(SavedRecipesState())
-    val state = _state.asStateFlow()
+    val state: StateFlow<SavedRecipesState> = repo.recipes
+        .map { SavedRecipesState(recipes = it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SavedRecipesState())
 
+    /** Synchronous check against the current snapshot — used to colour the bookmark. */
     fun isSaved(title: String): Boolean =
-        _state.value.recipes.any { it.title.equals(title.trim(), ignoreCase = true) }
+        state.value.recipes.any { it.title.equals(title.trim(), ignoreCase = true) }
 
     /** Toggle a Sous AI suggestion in/out of the saved collection. */
-    fun toggle(meal: SuggestedMeal) {
-        val exists = isSaved(meal.title)
-        _state.update { s ->
-            if (exists) s.copy(recipes = s.recipes.filterNot { it.title.equals(meal.title.trim(), ignoreCase = true) })
-            else        s.copy(recipes = listOf(savedRecipeFrom(meal)) + s.recipes)
-        }
+    fun toggle(meal: SuggestedMeal) = viewModelScope.launch {
+        if (repo.isSaved(meal.title)) repo.deleteByTitle(meal.title)
+        else                          repo.upsert(savedRecipeFrom(meal))
     }
 
-    fun remove(id: String) =
-        _state.update { it.copy(recipes = it.recipes.filterNot { r -> r.id == id }) }
+    fun remove(id: String) = viewModelScope.launch { repo.delete(id) }
 }
