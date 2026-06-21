@@ -50,6 +50,7 @@ data class PlanCookState(
     val selectedMoods    : Set<String>         = emptySet(),
     val selectedCuisines : Set<String>         = emptySet(),
     val pantryCount      : Int                 = 0,
+    val pantryItems      : List<com.souspantry.app.data.models.PantryItem> = emptyList(),
     val userName         : String              = "",
     val error            : String?             = null,
     val isPremium        : Boolean             = false,
@@ -79,6 +80,12 @@ class PlanCookViewModel @Inject constructor(
         viewModelScope.launch {
             prefs.forcePremium.collect { force ->
                 _state.update { it.copy(isPremium = force) }
+            }
+        }
+        // Keep the live pantry list in state for ingredient matching / week feed.
+        viewModelScope.launch {
+            repo.items.collect { items ->
+                _state.update { it.copy(pantryItems = items, pantryCount = items.size) }
             }
         }
     }
