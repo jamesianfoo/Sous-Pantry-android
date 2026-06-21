@@ -5,6 +5,7 @@ import androidx.room.*
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.souspantry.app.data.models.PantryItem
+import com.souspantry.app.data.models.ShoppingItem
 import com.souspantry.app.ui.plancook.MyRecipe
 import com.souspantry.app.ui.plancook.SavedRecipe
 import com.souspantry.app.ui.plancook.WeekMealEntry
@@ -45,8 +46,8 @@ interface PantryDao {
 // ── Database ──────────────────────────────────────────────────────────────────
 
 @Database(
-    entities = [PantryItem::class, WeekMealEntry::class, MyRecipe::class, SavedRecipe::class],
-    version  = 2,
+    entities = [PantryItem::class, WeekMealEntry::class, MyRecipe::class, SavedRecipe::class, ShoppingItem::class],
+    version  = 3,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -55,6 +56,7 @@ abstract class PantryDatabase : RoomDatabase() {
     abstract fun weekMealDao(): WeekMealDao
     abstract fun myRecipeDao(): MyRecipeDao
     abstract fun savedRecipeDao(): SavedRecipeDao
+    abstract fun shoppingDao(): ShoppingDao
 }
 
 /**
@@ -117,6 +119,28 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+/**
+ * v2 → v3: add the shopping_items table so the Shopping list (and items pushed
+ * to it from recipe details) persists across restarts. Existing tables untouched.
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS shopping_items (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                category TEXT,
+                quantity TEXT,
+                priority TEXT NOT NULL,
+                reason TEXT,
+                checked INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+    }
+}
+
 // ── Hilt module ───────────────────────────────────────────────────────────────
 
 @Module
@@ -126,7 +150,7 @@ object DatabaseModule {
     @Provides @Singleton
     fun providePantryDatabase(@ApplicationContext ctx: Context): PantryDatabase =
         Room.databaseBuilder(ctx, PantryDatabase::class.java, "sous_pantry.db")
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
     @Provides @Singleton
@@ -140,4 +164,7 @@ object DatabaseModule {
 
     @Provides @Singleton
     fun provideSavedRecipeDao(db: PantryDatabase): SavedRecipeDao = db.savedRecipeDao()
+
+    @Provides @Singleton
+    fun provideShoppingDao(db: PantryDatabase): ShoppingDao = db.shoppingDao()
 }

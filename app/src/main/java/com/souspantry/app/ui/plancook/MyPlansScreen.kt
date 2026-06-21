@@ -151,10 +151,12 @@ fun MyPlansScreen(
 
     showDetailSheet?.let { entry ->
         MealDetailSheet(
-            entry       = entry,
-            pantryItems = pantryItems,
-            onDismiss   = { showDetailSheet = null },
-            onRemove    = { pendingDelete = entry; showDetailSheet = null },
+            entry        = entry,
+            pantryItems  = pantryItems,
+            onDismiss    = { showDetailSheet = null },
+            onRemove     = { pendingDelete = entry; showDetailSheet = null },
+            onMarkCooked = { checked -> vm.markCooked(entry, checked); showDetailSheet = null },
+            onAddMissing = { missing -> vm.addMissingToShopping(missing) },
         )
     }
 
@@ -476,10 +478,12 @@ private fun AddMoreRow(date: LocalDate, onClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MealDetailSheet(
-    entry       : WeekMealEntry,
-    pantryItems : List<PantryItem>,
-    onDismiss   : () -> Unit,
-    onRemove    : () -> Unit,
+    entry         : WeekMealEntry,
+    pantryItems   : List<PantryItem>,
+    onDismiss     : () -> Unit,
+    onRemove      : () -> Unit,
+    onMarkCooked  : (checkedIngredients: List<String>) -> Unit,
+    onAddMissing  : (missing: List<String>) -> Unit,
 ) {
     val ingredientRows = remember(entry, pantryItems) {
         entry.ingredients.map { ing ->
@@ -570,7 +574,7 @@ fun MealDetailSheet(
                             modifier = Modifier.weight(1f))
                         if (missingItems.isNotEmpty() && !addedToShopping) {
                             TextButton(
-                                onClick        = { addedToShopping = true },
+                                onClick        = { onAddMissing(missingItems); addedToShopping = true },
                                 contentPadding = PaddingValues(0.dp),
                             ) {
                                 Icon(Icons.Filled.ShoppingCartCheckout, null, tint = Navy, modifier = Modifier.size(14.dp))
@@ -690,9 +694,10 @@ fun MealDetailSheet(
 
             // ── Action buttons ────────────────────────────────────────────────
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Mark as Cooked
+                // Mark as Cooked — deducts the checked in-pantry ingredients and
+                // removes the meal from the week.
                 Button(
-                    onClick  = { onDismiss() },  // TODO: deduct pantry items + record meal
+                    onClick  = { onMarkCooked(checkedItems.toList()); onDismiss() },
                     modifier = Modifier.fillMaxWidth().height(54.dp),
                     colors   = ButtonDefaults.buttonColors(containerColor = Green),
                     shape    = RoundedCornerShape(14.dp),

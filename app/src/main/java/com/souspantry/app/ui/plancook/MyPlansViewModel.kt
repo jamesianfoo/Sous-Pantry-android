@@ -2,13 +2,17 @@ package com.souspantry.app.ui.plancook
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.souspantry.app.data.models.ShoppingItem
 import com.souspantry.app.data.models.SuggestedMeal
+import com.souspantry.app.data.repository.PantryRepository
+import com.souspantry.app.data.repository.ShoppingRepository
 import com.souspantry.app.data.repository.WeekPlanRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -23,7 +27,9 @@ data class MyPlansState(
 
 @HiltViewModel
 class MyPlansViewModel @Inject constructor(
-    private val repo: WeekPlanRepository,
+    private val repo     : WeekPlanRepository,
+    private val pantry   : PantryRepository,
+    private val shopping : ShoppingRepository,
 ) : ViewModel() {
 
     private val _weekOffset = MutableStateFlow(0)
@@ -61,4 +67,40 @@ class MyPlansViewModel @Inject constructor(
     }
 
     private fun _stateEntries(): List<WeekMealEntry> = state.value.entries
+
+    // ── Cook + Shopping actions (from the meal detail sheet) ──────────────────
+
+    /**
+     * Marks a planned meal cooked: deducts the checked (in-pantry) ingredients
+     * from the pantry by name match, then removes the meal from the week.
+     * Mirrors iOS markCooked (minus the cook-history record, which the streak
+     * store will consume once it exists).
+     */
+    fun markCooked(entry: WeekMealEntry, checkedIngredients: List<String>) = viewModelScope.launch {
+        val pantryItems = pantry.items.first()
+        checkedIngredients.forEach { ing ->
+            val match = pantryItems.firstOrNull {
+                it.name.contains(ing, ignoreCase = true) || ing.contains(it.name, ignoreCase = true)
+            }
+            if (match != null) pantry.delete(match)
+        }
+        repo.delete(entry.id)
+    }
+
+    /** Adds the missing recipe ingredients to the shopping list (Essential, AI source). */
+    fun addMissingToShopping(missing: List<String>) = viewModelScope.launch {
+        missing.forEach { name ->
+            if (!shopping.exists(name)) {
+                shopping.upsert(
+                    ShoppingItem(
+                        name     = name,
+                        category = null,
+                        quantity = null,
+                        priority = "essential",
+                        reason   = "From a planned meal",
+                    )
+                )
+            }
+        }
+    }
 }

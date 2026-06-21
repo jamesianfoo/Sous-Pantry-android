@@ -72,8 +72,9 @@ data class AdventurousRecipe(
     val imageQuery          : String,
 )
 
+@Entity(tableName = "shopping_items")
 data class ShoppingItem(
-    val id      : String   = java.util.UUID.randomUUID().toString(),
+    @PrimaryKey val id : String = java.util.UUID.randomUUID().toString(),
     val name    : String,
     val category: String?,
     val quantity: String?,

@@ -1,6 +1,7 @@
 package com.souspantry.app.data.repository
 
 import androidx.room.*
+import com.souspantry.app.data.models.ShoppingItem
 import com.souspantry.app.ui.plancook.MyRecipe
 import com.souspantry.app.ui.plancook.SavedRecipe
 import com.souspantry.app.ui.plancook.WeekMealEntry
@@ -52,6 +53,30 @@ interface SavedRecipeDao {
     suspend fun countByTitle(title: String): Int
 }
 
+@Dao
+interface ShoppingDao {
+    @Query("SELECT * FROM shopping_items")
+    fun getAll(): Flow<List<ShoppingItem>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(item: ShoppingItem)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(items: List<ShoppingItem>)
+
+    @Query("DELETE FROM shopping_items WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM shopping_items WHERE checked = 1")
+    suspend fun deleteChecked()
+
+    @Query("SELECT * FROM shopping_items WHERE checked = 1")
+    suspend fun getChecked(): List<ShoppingItem>
+
+    @Query("SELECT COUNT(*) FROM shopping_items WHERE LOWER(TRIM(name)) = LOWER(TRIM(:name))")
+    suspend fun countByName(name: String): Int
+}
+
 // ── Repositories ────────────────────────────────────────────────────────────
 
 @Singleton
@@ -75,4 +100,15 @@ class SavedRecipeRepository @Inject constructor(private val dao: SavedRecipeDao)
     suspend fun delete(id: String)            = dao.deleteById(id)
     suspend fun deleteByTitle(title: String)  = dao.deleteByTitle(title)
     suspend fun isSaved(title: String): Boolean = dao.countByTitle(title) > 0
+}
+
+@Singleton
+class ShoppingRepository @Inject constructor(private val dao: ShoppingDao) {
+    val items: Flow<List<ShoppingItem>> = dao.getAll()
+    suspend fun upsert(item: ShoppingItem)            = dao.upsert(item)
+    suspend fun upsertAll(items: List<ShoppingItem>)  = dao.upsertAll(items)
+    suspend fun delete(id: String)                    = dao.deleteById(id)
+    suspend fun deleteChecked()                       = dao.deleteChecked()
+    suspend fun getChecked(): List<ShoppingItem>      = dao.getChecked()
+    suspend fun exists(name: String): Boolean         = dao.countByName(name) > 0
 }
