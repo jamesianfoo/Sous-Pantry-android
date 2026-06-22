@@ -25,6 +25,7 @@ import com.souspantry.app.ui.onboarding.OnboardingScreen
 import com.souspantry.app.ui.onboarding.OnboardingViewModel
 import com.souspantry.app.ui.pantry.BarcodeScanScreen
 import com.souspantry.app.ui.pantry.PantryScreen
+import com.souspantry.app.ui.ereceipt.EReceiptSyncScreen
 import com.souspantry.app.ui.pantry.ReceiptScanScreen
 import com.souspantry.app.ui.plancook.PlanCookScreen
 import com.souspantry.app.ui.account.AccountScreen
@@ -40,6 +41,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
     data object Account   : Screen("account",   "Account",     Icons.Filled.AccountCircle)
     data object Barcode   : Screen("barcode",   "Scan Barcode")
     data object Receipt   : Screen("receipt",   "Scan Receipt")
+    data object EReceipt  : Screen("ereceipt",  "eReceipt Sync")
     data object Onboarding: Screen("onboarding","Onboarding")
     data object Auth      : Screen("auth",      "Sign In")
     data object Paywall   : Screen("paywall",   "Premium")
@@ -103,8 +105,9 @@ fun SousPantryNavHost() {
                 )
             }
             composable(Screen.Pantry.route)   { PantryScreen(
-                onBarcodeScan = { navController.navigate(Screen.Barcode.route) },
-                onReceiptScan = { navController.navigate(Screen.Receipt.route) },
+                onBarcodeScan  = { navController.navigate(Screen.Barcode.route) },
+                onReceiptScan  = { navController.navigate(Screen.Receipt.route) },
+                onSyncEreceipt = { navController.navigate(Screen.EReceipt.route) },
             ) }
             composable(Screen.PlanCook.route) { PlanCookScreen() }
             composable(Screen.Shopping.route) { ShoppingScreen() }
@@ -120,6 +123,9 @@ fun SousPantryNavHost() {
                     onDismiss = { navController.popBackStack() },
                     onSaved   = { navController.popBackStack() },
                 )
+            }
+            composable(Screen.EReceipt.route) {
+                EReceiptSyncScreen(onBack = { navController.popBackStack() })
             }
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(onComplete = {

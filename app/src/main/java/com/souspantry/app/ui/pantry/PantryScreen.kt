@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Kitchen
 import androidx.compose.material3.*
@@ -60,9 +61,10 @@ private val CATEGORY_ORDER = listOf(
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PantryScreen(
-    onBarcodeScan : () -> Unit = {},
-    onReceiptScan : () -> Unit = {},
-    vm            : PantryViewModel = hiltViewModel(),
+    onBarcodeScan  : () -> Unit = {},
+    onReceiptScan  : () -> Unit = {},
+    onSyncEreceipt : () -> Unit = {},
+    vm             : PantryViewModel = hiltViewModel(),
 ) {
     // Request camera permission once on first render
     val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA)
@@ -205,10 +207,11 @@ fun PantryScreen(
                     ) { addMenuOpen = false }
             )
             AddPillMenu(
-                onScanBarcode = { addMenuOpen = false; onBarcodeScan() },
-                onScanReceipt = { addMenuOpen = false; onReceiptScan() },
-                onAddManually = { addMenuOpen = false; showAdd = true },
-                modifier      = Modifier.align(Alignment.TopEnd).padding(top = 70.dp, end = 16.dp),
+                onScanBarcode  = { addMenuOpen = false; onBarcodeScan() },
+                onScanReceipt  = { addMenuOpen = false; onReceiptScan() },
+                onSyncEreceipt = { addMenuOpen = false; onSyncEreceipt() },
+                onAddManually  = { addMenuOpen = false; showAdd = true },
+                modifier       = Modifier.align(Alignment.TopEnd).padding(top = 70.dp, end = 16.dp),
             )
         }
     }
@@ -393,19 +396,21 @@ private fun SearchBar(
 
 @Composable
 private fun AddPillMenu(
-    onScanBarcode : () -> Unit,
-    onScanReceipt : () -> Unit,
-    onAddManually : () -> Unit,
-    modifier      : Modifier = Modifier,
+    onScanBarcode  : () -> Unit,
+    onScanReceipt  : () -> Unit,
+    onSyncEreceipt : () -> Unit,
+    onAddManually  : () -> Unit,
+    modifier       : Modifier = Modifier,
 ) {
     Column(
         modifier            = modifier,
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        AddPill("Scan Items",   Icons.Filled.CameraAlt,       onScanBarcode)
-        AddPill("Scan Receipt", Icons.Filled.Receipt,         onScanReceipt)
-        AddPill("Add Item",     Icons.Filled.Add,             onAddManually)
+        AddPill("Scan Items",    Icons.Filled.CameraAlt, onScanBarcode)
+        AddPill("Scan Receipt",  Icons.Filled.Receipt,   onScanReceipt)
+        AddPill("Sync eReceipt", Icons.Filled.Sync,      onSyncEreceipt)
+        AddPill("Add Item",      Icons.Filled.Add,       onAddManually)
     }
 }
 

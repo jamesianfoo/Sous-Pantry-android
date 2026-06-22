@@ -57,6 +57,9 @@ class UserPreferencesRepository @Inject constructor(
 
         // Debug override — only honoured in debug builds (gated at read-site).
         val KEY_FORCE_PREMIUM    = booleanPreferencesKey("debug_force_premium")
+
+        // eReceipt custom stores — each entry is "name|url".
+        val KEY_CUSTOM_STORES    = stringSetPreferencesKey("ereceipt_custom_stores")
     }
 
     // ── Reads ────────────────────────────────────────────────────────────────
@@ -94,6 +97,8 @@ class UserPreferencesRepository @Inject constructor(
 
     val forcePremium: Flow<Boolean>    = context.dataStore.data.map { it[KEY_FORCE_PREMIUM] ?: false }
 
+    val customStores: Flow<Set<String>> = context.dataStore.data.map { it[KEY_CUSTOM_STORES] ?: emptySet() }
+
     // ── Writes ───────────────────────────────────────────────────────────────
 
     suspend fun setUserName(name: String)             = context.dataStore.edit { it[KEY_USER_NAME]  = name }
@@ -119,6 +124,14 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSousAIEnabled(on: Boolean)         = context.dataStore.edit { it[KEY_SOUS_AI_ENABLED]  = on }
 
     suspend fun setForcePremium(on: Boolean)          = context.dataStore.edit { it[KEY_FORCE_PREMIUM] = on }
+
+    suspend fun addCustomStore(name: String, url: String) = context.dataStore.edit { prefs ->
+        val current = prefs[KEY_CUSTOM_STORES] ?: emptySet()
+        prefs[KEY_CUSTOM_STORES] = current + "${name.trim()}|${url.trim()}"
+    }
+    suspend fun removeCustomStore(entry: String) = context.dataStore.edit { prefs ->
+        prefs[KEY_CUSTOM_STORES] = (prefs[KEY_CUSTOM_STORES] ?: emptySet()) - entry
+    }
 
     suspend fun setSupabaseSession(token: String, userId: String) = context.dataStore.edit {
         it[KEY_SUPABASE_TOKEN]   = token
