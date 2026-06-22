@@ -111,7 +111,20 @@ fun SousPantryNavHost() {
             ) }
             composable(Screen.PlanCook.route) { PlanCookScreen() }
             composable(Screen.Shopping.route) { ShoppingScreen() }
-            composable(Screen.Account.route)  { AccountScreen() }
+            composable(Screen.Account.route)  {
+                AccountScreen(
+                    onLoggedOut      = {
+                        navController.navigate(Screen.Onboarding.route) {
+                            popUpTo(0) { inclusive = true }   // clear the whole back stack
+                        }
+                    },
+                    onAccountDeleted = {
+                        navController.navigate(Screen.Onboarding.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                )
+            }
             composable(Screen.Barcode.route) {
                 BarcodeScanScreen(
                     onDismiss = { navController.popBackStack() },

@@ -3,12 +3,15 @@ package com.souspantry.app.ui.account
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.souspantry.app.data.local.UserPreferencesRepository
+import com.souspantry.app.data.repository.MyRecipeRepository
 import com.souspantry.app.data.repository.PantryRepository
+import com.souspantry.app.data.repository.SavedRecipeRepository
+import com.souspantry.app.data.repository.ShoppingRepository
+import com.souspantry.app.data.repository.WeekPlanRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,8 +38,12 @@ data class AccountState(
 
 @HiltViewModel
 class AccountViewModel @Inject constructor(
-    private val prefs : UserPreferencesRepository,
-    private val pantry: PantryRepository,
+    private val prefs     : UserPreferencesRepository,
+    private val pantry    : PantryRepository,
+    private val weekPlan  : WeekPlanRepository,
+    private val myRecipe  : MyRecipeRepository,
+    private val saved     : SavedRecipeRepository,
+    private val shopping  : ShoppingRepository,
 ) : ViewModel() {
 
     // Compose 13 flows into one state. We chain two combines because combine() has
@@ -99,26 +106,43 @@ class AccountViewModel @Inject constructor(
     fun setSousAIEnabled(on: Boolean)      = viewModelScope.launch { prefs.setSousAIEnabled(on) }
     fun setForcePremium(on: Boolean)       = viewModelScope.launch { prefs.setForcePremium(on) }
 
-    // ── Account-action stubs ────────────────────────────────────────────────
+    // ── Account actions ─────────────────────────────────────────────────────
 
     /**
-     * Logs out the local session — clears DataStore prefs (keeps deviceId stable).
-     * No remote sign-out call yet — Supabase auth wiring lands in Stage 2 (Task 7).
+     * Logs out the local session. Clears the Supabase session token and the
+     * user's profile-identity prefs (name/email), but KEEPS local data (pantry,
+     * plans, recipes, shopping) — logging out shouldn't destroy your data.
+     * When Supabase auth lands (Task 7) this also calls the remote sign-out.
+     *
+     * @param onComplete invoked on the main scope once the local sign-out finishes
+     *                   so the UI can navigate to the welcome/auth flow.
      */
-    fun logOut() = viewModelScope.launch {
+    fun logOut(onComplete: () -> Unit = {}) = viewModelScope.launch {
         prefs.clearSupabaseSession()
+        prefs.setUserName("")
+        prefs.setUserEmail("")
+        onComplete()
     }
 
     /**
-     * Hard wipe: clears every pref (including profile + diet + notifications) and
-     * deletes all local pantry items. Mirrors iOS Delete Account, minus the
-     * Supabase server-side erase which we'll add when auth lands.
+     * Hard factory reset. Erases EVERY local store — pantry, weekly plans,
+     * My Recipes, Saved Recipes, shopping list — and clears all DataStore prefs
+     * (profile, diet, notifications, onboarding flag; deviceId is preserved).
+     * Mirrors iOS Delete Account, minus the Supabase server-side erase which we
+     * add when auth lands.
+     *
+     * @param onComplete invoked once the wipe finishes so the UI can return to
+     *                   the onboarding flow (the app is now in a fresh state).
      */
-    fun deleteAccount() = viewModelScope.launch {
-        // Wipe Room pantry
-        val items = pantry.items.first()
-        items.forEach { pantry.delete(it) }
-        // Wipe DataStore
+    fun deleteAccount(onComplete: () -> Unit = {}) = viewModelScope.launch {
+        // Wipe every Room table
+        pantry.deleteAll()
+        weekPlan.deleteAll()
+        myRecipe.deleteAll()
+        saved.deleteAll()
+        shopping.deleteAll()
+        // Wipe DataStore (keeps deviceId; onboarding flag is cleared → onboarding shows)
         prefs.clearAll()
+        onComplete()
     }
 }

@@ -15,4 +15,5 @@ class PantryRepository @Inject constructor(
     suspend fun addAll(items: List<PantryItem>) = dao.insertAll(items)
     suspend fun update(item: PantryItem)        = dao.update(item)
     suspend fun delete(item: PantryItem)        = dao.delete(item)
+    suspend fun deleteAll()                     = dao.deleteAll()
 }

@@ -36,7 +36,11 @@ import com.souspantry.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountScreen(vm: AccountViewModel = hiltViewModel()) {
+fun AccountScreen(
+    onLoggedOut     : () -> Unit = {},
+    onAccountDeleted: () -> Unit = {},
+    vm              : AccountViewModel = hiltViewModel(),
+) {
     val state by vm.state.collectAsState()
 
     var showDietaryEditor by remember { mutableStateOf(false) }
@@ -324,7 +328,7 @@ fun AccountScreen(vm: AccountViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirm = false },
             confirmButton    = {
-                TextButton(onClick = { vm.logOut(); showLogoutConfirm = false }) {
+                TextButton(onClick = { showLogoutConfirm = false; vm.logOut(onComplete = onLoggedOut) }) {
                     Text("Log Out", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
                 }
             },
@@ -338,13 +342,13 @@ fun AccountScreen(vm: AccountViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             confirmButton    = {
-                TextButton(onClick = { vm.deleteAccount(); showDeleteConfirm = false }) {
+                TextButton(onClick = { showDeleteConfirm = false; vm.deleteAccount(onComplete = onAccountDeleted) }) {
                     Text("Delete", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton    = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } },
             title            = { Text("Delete account?") },
-            text             = { Text("This will permanently erase your pantry items and all preferences. This can't be undone.") },
+            text             = { Text("This permanently erases everything on this device — your pantry, weekly plans, recipes, saved recipes, shopping list, and all preferences. This can't be undone.") },
             containerColor   = Color.White,
         )
     }
