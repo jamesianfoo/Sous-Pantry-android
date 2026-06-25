@@ -76,7 +76,7 @@ fun SousPantryNavHost() {
         is AppGate.Ready  -> SousPantryAppScaffold(
             startDest      = when {
                 !g.signedIn        -> Screen.Auth.route
-                !g.onboardingDone  -> Screen.SetupWizard.route
+                !g.onboardingDone  -> Screen.Onboarding.route
                 !g.founderNoteSeen -> Screen.FounderNote.route
                 else               -> Screen.Home.route
             },
@@ -184,15 +184,17 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
             }
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(onComplete = {
-                    navController.navigate(Screen.Home.route) {
+                    // Onboarding done → founder note (first run) or straight Home.
+                    val dest = if (founderNoteSeen) Screen.Home.route else Screen.FounderNote.route
+                    navController.navigate(dest) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
                 })
             }
             composable(Screen.Auth.route) {
                 AuthScreen(onSignedIn = {
-                    // After sign-in, run the setup wizard (first run) or go straight Home.
-                    val dest = if (onboardingDone) Screen.Home.route else Screen.SetupWizard.route
+                    // After sign-in, run onboarding (first run) or go straight Home.
+                    val dest = if (onboardingDone) Screen.Home.route else Screen.Onboarding.route
                     navController.navigate(dest) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
