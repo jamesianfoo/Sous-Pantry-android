@@ -119,6 +119,7 @@ class AccountViewModel @Inject constructor(
      */
     fun logOut(onComplete: () -> Unit = {}) = viewModelScope.launch {
         prefs.clearSupabaseSession()
+        prefs.setSignedIn(false)
         prefs.setUserName("")
         prefs.setUserEmail("")
         onComplete()

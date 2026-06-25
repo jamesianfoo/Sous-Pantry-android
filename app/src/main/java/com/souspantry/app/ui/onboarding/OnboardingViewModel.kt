@@ -18,5 +18,9 @@ class OnboardingViewModel @Inject constructor(
     val onboardingDone = prefs.onboardingDone
         .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = true)
 
+    /** true = past the sign-in gate. Defaults to true while loading so we don't flash the auth screen. */
+    val signedIn = prefs.signedIn
+        .stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = true)
+
     fun complete() = viewModelScope.launch { prefs.setOnboardingDone() }
 }

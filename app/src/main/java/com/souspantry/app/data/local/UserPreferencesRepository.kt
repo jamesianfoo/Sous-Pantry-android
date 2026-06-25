@@ -51,7 +51,8 @@ class UserPreferencesRepository @Inject constructor(
         val KEY_RECOMMENDED_SUBS    = booleanPreferencesKey("recommended_subs")
         val KEY_SOUS_AI_ENABLED     = booleanPreferencesKey("sous_ai_enabled")
 
-        // Supabase session (stage 2)
+        // Auth / session
+        val KEY_SIGNED_IN        = booleanPreferencesKey("signed_in")
         val KEY_SUPABASE_TOKEN   = stringPreferencesKey("supabase_token")
         val KEY_SUPABASE_USER_ID = stringPreferencesKey("supabase_user_id")
 
@@ -92,6 +93,7 @@ class UserPreferencesRepository @Inject constructor(
     val recommendedSubs: Flow<Boolean> = context.dataStore.data.map { it[KEY_RECOMMENDED_SUBS] ?: true }
     val sousAIEnabled: Flow<Boolean>   = context.dataStore.data.map { it[KEY_SOUS_AI_ENABLED]  ?: true }
 
+    val signedIn: Flow<Boolean>        = context.dataStore.data.map { it[KEY_SIGNED_IN] ?: false }
     val supabaseToken: Flow<String?>   = context.dataStore.data.map { it[KEY_SUPABASE_TOKEN] }
     val supabaseUserId: Flow<String?>  = context.dataStore.data.map { it[KEY_SUPABASE_USER_ID] }
 
@@ -132,6 +134,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun removeCustomStore(entry: String) = context.dataStore.edit { prefs ->
         prefs[KEY_CUSTOM_STORES] = (prefs[KEY_CUSTOM_STORES] ?: emptySet()) - entry
     }
+
+    suspend fun setSignedIn(on: Boolean)              = context.dataStore.edit { it[KEY_SIGNED_IN] = on }
 
     suspend fun setSupabaseSession(token: String, userId: String) = context.dataStore.edit {
         it[KEY_SUPABASE_TOKEN]   = token

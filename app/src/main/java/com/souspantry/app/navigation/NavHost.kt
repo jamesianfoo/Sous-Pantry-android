@@ -29,6 +29,7 @@ import com.souspantry.app.ui.ereceipt.EReceiptSyncScreen
 import com.souspantry.app.ui.pantry.ReceiptScanScreen
 import com.souspantry.app.ui.plancook.PlanCookScreen
 import com.souspantry.app.ui.account.AccountScreen
+import com.souspantry.app.ui.auth.AuthScreen
 import com.souspantry.app.ui.shopping.ShoppingScreen
 import com.souspantry.app.ui.theme.Green
 import com.souspantry.app.ui.theme.White
@@ -53,7 +54,13 @@ private val bottomNavItems = listOf(Screen.Home, Screen.Pantry, Screen.PlanCook,
 fun SousPantryNavHost() {
     val onboardingVm: OnboardingViewModel = hiltViewModel()
     val onboardingDone by onboardingVm.onboardingDone.collectAsState()
-    val startDest = if (onboardingDone) Screen.Home.route else Screen.Onboarding.route
+    val signedIn       by onboardingVm.signedIn.collectAsState()
+    // Sign-in gate first, then onboarding, then the main app.
+    val startDest = when {
+        !signedIn       -> Screen.Auth.route
+        !onboardingDone -> Screen.Onboarding.route
+        else            -> Screen.Home.route
+    }
     val navController = rememberNavController()
     val navBackStack  by navController.currentBackStackEntryAsState()
     val currentDest   = navBackStack?.destination
@@ -114,12 +121,12 @@ fun SousPantryNavHost() {
             composable(Screen.Account.route)  {
                 AccountScreen(
                     onLoggedOut      = {
-                        navController.navigate(Screen.Onboarding.route) {
+                        navController.navigate(Screen.Auth.route) {
                             popUpTo(0) { inclusive = true }   // clear the whole back stack
                         }
                     },
                     onAccountDeleted = {
-                        navController.navigate(Screen.Onboarding.route) {
+                        navController.navigate(Screen.Auth.route) {
                             popUpTo(0) { inclusive = true }
                         }
                     },
@@ -147,7 +154,15 @@ fun SousPantryNavHost() {
                     }
                 })
             }
-            composable(Screen.Auth.route)     { /* Task 7 — AuthScreen */ }
+            composable(Screen.Auth.route) {
+                AuthScreen(onSignedIn = {
+                    // After sign-in, go to onboarding (first run) or straight Home.
+                    val dest = if (onboardingDone) Screen.Home.route else Screen.Onboarding.route
+                    navController.navigate(dest) {
+                        popUpTo(Screen.Auth.route) { inclusive = true }
+                    }
+                })
+            }
             composable(Screen.Paywall.route)  { /* Task 8 — PaywallScreen */ }
         }
     }
