@@ -30,6 +30,7 @@ import com.souspantry.app.ui.pantry.ReceiptScanScreen
 import com.souspantry.app.ui.plancook.PlanCookScreen
 import com.souspantry.app.ui.account.AccountScreen
 import com.souspantry.app.ui.auth.AuthScreen
+import com.souspantry.app.ui.setup.SetupWizardScreen
 import com.souspantry.app.ui.shopping.ShoppingScreen
 import com.souspantry.app.ui.theme.Green
 import com.souspantry.app.ui.theme.White
@@ -44,6 +45,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
     data object Receipt   : Screen("receipt",   "Scan Receipt")
     data object EReceipt  : Screen("ereceipt",  "eReceipt Sync")
     data object Onboarding: Screen("onboarding","Onboarding")
+    data object SetupWizard: Screen("setupwizard","Setup")
     data object Auth      : Screen("auth",      "Sign In")
     data object Paywall   : Screen("paywall",   "Premium")
 }
@@ -55,10 +57,10 @@ fun SousPantryNavHost() {
     val onboardingVm: OnboardingViewModel = hiltViewModel()
     val onboardingDone by onboardingVm.onboardingDone.collectAsState()
     val signedIn       by onboardingVm.signedIn.collectAsState()
-    // Sign-in gate first, then onboarding, then the main app.
+    // Sign-in gate first, then the setup wizard, then the main app.
     val startDest = when {
         !signedIn       -> Screen.Auth.route
-        !onboardingDone -> Screen.Onboarding.route
+        !onboardingDone -> Screen.SetupWizard.route
         else            -> Screen.Home.route
     }
     val navController = rememberNavController()
@@ -156,10 +158,17 @@ fun SousPantryNavHost() {
             }
             composable(Screen.Auth.route) {
                 AuthScreen(onSignedIn = {
-                    // After sign-in, go to onboarding (first run) or straight Home.
-                    val dest = if (onboardingDone) Screen.Home.route else Screen.Onboarding.route
+                    // After sign-in, run the setup wizard (first run) or go straight Home.
+                    val dest = if (onboardingDone) Screen.Home.route else Screen.SetupWizard.route
                     navController.navigate(dest) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
+                    }
+                })
+            }
+            composable(Screen.SetupWizard.route) {
+                SetupWizardScreen(onComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.SetupWizard.route) { inclusive = true }
                     }
                 })
             }
