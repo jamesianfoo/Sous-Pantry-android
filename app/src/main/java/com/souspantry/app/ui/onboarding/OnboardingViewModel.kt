@@ -21,7 +21,11 @@ import javax.inject.Inject
  */
 sealed interface AppGate {
     data object Loading : AppGate
-    data class Ready(val signedIn: Boolean, val onboardingDone: Boolean) : AppGate
+    data class Ready(
+        val signedIn        : Boolean,
+        val onboardingDone  : Boolean,
+        val founderNoteSeen : Boolean,
+    ) : AppGate
 }
 
 @HiltViewModel
@@ -29,8 +33,10 @@ class OnboardingViewModel @Inject constructor(
     private val prefs: UserPreferencesRepository,
 ) : ViewModel() {
 
-    val gate: StateFlow<AppGate> = combine(prefs.signedIn, prefs.onboardingDone) { signedIn, done ->
-        AppGate.Ready(signedIn = signedIn, onboardingDone = done)
+    val gate: StateFlow<AppGate> = combine(
+        prefs.signedIn, prefs.onboardingDone, prefs.founderNoteSeen,
+    ) { signedIn, done, founderSeen ->
+        AppGate.Ready(signedIn = signedIn, onboardingDone = done, founderNoteSeen = founderSeen)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AppGate.Loading)
 
     fun complete() = viewModelScope.launch { prefs.setOnboardingDone() }

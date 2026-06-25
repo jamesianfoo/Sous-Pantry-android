@@ -27,6 +27,7 @@ class UserPreferencesRepository @Inject constructor(
         val KEY_USER_NAME        = stringPreferencesKey("user_name")
         val KEY_USER_EMAIL       = stringPreferencesKey("user_email")
         val KEY_ONBOARDING_DONE  = booleanPreferencesKey("onboarding_done")
+        val KEY_FOUNDER_NOTE_SEEN = booleanPreferencesKey("founder_note_seen")
 
         // Notifications (global + per-category)
         val KEY_NOTIF_ENABLED       = booleanPreferencesKey("notif_enabled")
@@ -74,6 +75,7 @@ class UserPreferencesRepository @Inject constructor(
     val userName: Flow<String>         = context.dataStore.data.map { it[KEY_USER_NAME]        ?: "" }
     val userEmail: Flow<String>        = context.dataStore.data.map { it[KEY_USER_EMAIL]       ?: "" }
     val onboardingDone: Flow<Boolean>  = context.dataStore.data.map { it[KEY_ONBOARDING_DONE]  ?: false }
+    val founderNoteSeen: Flow<Boolean> = context.dataStore.data.map { it[KEY_FOUNDER_NOTE_SEEN] ?: false }
 
     val notifEnabled: Flow<Boolean>      = context.dataStore.data.map { it[KEY_NOTIF_ENABLED]      ?: true }
     val alertExpiring: Flow<Boolean>     = context.dataStore.data.map { it[KEY_ALERT_EXPIRING]     ?: true }
@@ -106,6 +108,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setUserName(name: String)             = context.dataStore.edit { it[KEY_USER_NAME]  = name }
     suspend fun setUserEmail(email: String)           = context.dataStore.edit { it[KEY_USER_EMAIL] = email }
     suspend fun setOnboardingDone()                   = context.dataStore.edit { it[KEY_ONBOARDING_DONE] = true }
+    suspend fun setFounderNoteSeen()                  = context.dataStore.edit { it[KEY_FOUNDER_NOTE_SEEN] = true }
 
     suspend fun setNotifEnabled(on: Boolean)          = context.dataStore.edit { it[KEY_NOTIF_ENABLED]      = on }
     suspend fun setAlertExpiring(on: Boolean)         = context.dataStore.edit { it[KEY_ALERT_EXPIRING]     = on }
