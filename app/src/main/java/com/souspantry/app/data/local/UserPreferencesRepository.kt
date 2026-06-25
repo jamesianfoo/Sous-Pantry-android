@@ -57,6 +57,8 @@ class UserPreferencesRepository @Inject constructor(
         val KEY_SUPABASE_TOKEN   = stringPreferencesKey("supabase_token")
         val KEY_SUPABASE_USER_ID = stringPreferencesKey("supabase_user_id")
 
+        // Premium entitlement (set by the paywall; real billing replaces this later).
+        val KEY_PREMIUM_ACTIVE   = booleanPreferencesKey("premium_active")
         // Debug override — only honoured in debug builds (gated at read-site).
         val KEY_FORCE_PREMIUM    = booleanPreferencesKey("debug_force_premium")
 
@@ -99,6 +101,7 @@ class UserPreferencesRepository @Inject constructor(
     val supabaseToken: Flow<String?>   = context.dataStore.data.map { it[KEY_SUPABASE_TOKEN] }
     val supabaseUserId: Flow<String?>  = context.dataStore.data.map { it[KEY_SUPABASE_USER_ID] }
 
+    val premiumActive: Flow<Boolean>   = context.dataStore.data.map { it[KEY_PREMIUM_ACTIVE] ?: false }
     val forcePremium: Flow<Boolean>    = context.dataStore.data.map { it[KEY_FORCE_PREMIUM] ?: false }
 
     val customStores: Flow<Set<String>> = context.dataStore.data.map { it[KEY_CUSTOM_STORES] ?: emptySet() }
@@ -128,6 +131,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setRecommendedSubs(on: Boolean)       = context.dataStore.edit { it[KEY_RECOMMENDED_SUBS] = on }
     suspend fun setSousAIEnabled(on: Boolean)         = context.dataStore.edit { it[KEY_SOUS_AI_ENABLED]  = on }
 
+    suspend fun setPremiumActive(on: Boolean)         = context.dataStore.edit { it[KEY_PREMIUM_ACTIVE] = on }
     suspend fun setForcePremium(on: Boolean)          = context.dataStore.edit { it[KEY_FORCE_PREMIUM] = on }
 
     suspend fun addCustomStore(name: String, url: String) = context.dataStore.edit { prefs ->

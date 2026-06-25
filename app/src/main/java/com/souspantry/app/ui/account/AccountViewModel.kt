@@ -66,9 +66,13 @@ class AccountViewModel @Inject constructor(
         prefs.alertExpiring, prefs.alertReceipt, prefs.alertPantryStale,
     ) { expiring, receipt, stale -> Triple(expiring, receipt, stale) }
 
+    private data class CustomisationState(
+        val subs: Boolean, val sousAi: Boolean, val forcePremium: Boolean, val premiumActive: Boolean,
+    )
+
     private val customisationState = combine(
-        prefs.recommendedSubs, prefs.sousAIEnabled, prefs.forcePremium,
-    ) { subs, sousAi, forcePremium -> Triple(subs, sousAi, forcePremium) }
+        prefs.recommendedSubs, prefs.sousAIEnabled, prefs.forcePremium, prefs.premiumActive,
+    ) { subs, sousAi, forcePremium, premiumActive -> CustomisationState(subs, sousAi, forcePremium, premiumActive) }
 
     val state: StateFlow<AccountState> = combine(
         identityState, unitsState, dietState, notifState, customisationState,
@@ -82,10 +86,11 @@ class AccountViewModel @Inject constructor(
             alertExpiring     = notif.first,
             alertReceipt      = notif.second,
             alertPantryStale  = notif.third,
-            recommendedSubs   = cust.first,
-            sousAIEnabled     = cust.second,
-            forcePremium      = cust.third,
-            isPremium         = cust.third, // Real subscription wiring lands in Task 8; for now this is the only source of premium-truthiness.
+            recommendedSubs   = cust.subs,
+            sousAIEnabled     = cust.sousAi,
+            forcePremium      = cust.forcePremium,
+            // Premium = a paywall purchase OR the debug force toggle.
+            isPremium         = cust.premiumActive || cust.forcePremium,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountState())
 

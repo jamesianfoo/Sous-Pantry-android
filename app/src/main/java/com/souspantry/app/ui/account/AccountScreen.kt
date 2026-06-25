@@ -39,6 +39,7 @@ import com.souspantry.app.ui.theme.*
 fun AccountScreen(
     onLoggedOut     : () -> Unit = {},
     onAccountDeleted: () -> Unit = {},
+    onUpgrade       : () -> Unit = {},
     vm              : AccountViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsState()
@@ -94,7 +95,7 @@ fun AccountScreen(
                                     Surface(
                                         shape    = RoundedCornerShape(4.dp),
                                         color    = Green,
-                                        modifier = Modifier.clickable { /* TODO: paywall — Task 8 */ },
+                                        modifier = Modifier.clickable(onClick = onUpgrade),
                                     ) {
                                         Text(
                                             "Upgrade",

@@ -36,6 +36,7 @@ import com.souspantry.app.ui.plancook.PlanCookScreen
 import com.souspantry.app.ui.account.AccountScreen
 import com.souspantry.app.ui.auth.AuthScreen
 import com.souspantry.app.ui.founder.FounderNoteScreen
+import com.souspantry.app.ui.paywall.PaywallScreen
 import com.souspantry.app.ui.setup.SetupWizardScreen
 import com.souspantry.app.ui.shopping.ShoppingScreen
 import com.souspantry.app.ui.theme.Green
@@ -163,6 +164,7 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                    onUpgrade        = { navController.navigate(Screen.Paywall.route) },
                 )
             }
             composable(Screen.Barcode.route) {
@@ -208,10 +210,8 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
             composable(Screen.FounderNote.route) {
                 FounderNoteScreen(
                     onProceed = {
-                        // TODO(#5 paywall): show the paywall here before Home.
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.FounderNote.route) { inclusive = true }
-                        }
+                        // "Let's get started" → paywall, then Home.
+                        navController.navigate(Screen.Paywall.route)
                     },
                     onSkip = {
                         navController.navigate(Screen.Home.route) {
@@ -220,7 +220,20 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
                     },
                 )
             }
-            composable(Screen.Paywall.route)  { /* Task 8 — PaywallScreen */ }
+            composable(Screen.Paywall.route) {
+                PaywallScreen(
+                    onPurchased = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(0) { inclusive = true }   // clear setup flow from the back stack
+                        }
+                    },
+                    onDismiss = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                )
+            }
         }
     }
 }

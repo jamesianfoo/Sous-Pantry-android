@@ -76,10 +76,12 @@ class PlanCookViewModel @Inject constructor(
             _state.update { it.copy(userName = name, pantryCount = pantryItems.size) }
             sendGreeting()
         }
-        // Live-update the premium flag whenever the debug toggle flips.
+        // Premium = a paywall purchase OR the debug force toggle.
         viewModelScope.launch {
-            prefs.forcePremium.collect { force ->
-                _state.update { it.copy(isPremium = force) }
+            kotlinx.coroutines.flow.combine(prefs.premiumActive, prefs.forcePremium) { active, force ->
+                active || force
+            }.collect { premium ->
+                _state.update { it.copy(isPremium = premium) }
             }
         }
         // Keep the live pantry list in state for ingredient matching / week feed.
