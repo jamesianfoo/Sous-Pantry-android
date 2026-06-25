@@ -1,5 +1,8 @@
 package com.souspantry.app.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -11,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -22,6 +26,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.souspantry.app.ui.home.HomeScreen
 import com.souspantry.app.ui.onboarding.OnboardingScreen
+import com.souspantry.app.ui.onboarding.AppGate
 import com.souspantry.app.ui.onboarding.OnboardingViewModel
 import com.souspantry.app.ui.pantry.BarcodeScanScreen
 import com.souspantry.app.ui.pantry.PantryScreen
@@ -33,6 +38,7 @@ import com.souspantry.app.ui.auth.AuthScreen
 import com.souspantry.app.ui.setup.SetupWizardScreen
 import com.souspantry.app.ui.shopping.ShoppingScreen
 import com.souspantry.app.ui.theme.Green
+import com.souspantry.app.ui.theme.Navy
 import com.souspantry.app.ui.theme.White
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector? = null) {
@@ -55,14 +61,35 @@ private val bottomNavItems = listOf(Screen.Home, Screen.Pantry, Screen.PlanCook,
 @Composable
 fun SousPantryNavHost() {
     val onboardingVm: OnboardingViewModel = hiltViewModel()
-    val onboardingDone by onboardingVm.onboardingDone.collectAsState()
-    val signedIn       by onboardingVm.signedIn.collectAsState()
-    // Sign-in gate first, then the setup wizard, then the main app.
-    val startDest = when {
-        !signedIn       -> Screen.Auth.route
-        !onboardingDone -> Screen.SetupWizard.route
-        else            -> Screen.Home.route
+    val gate by onboardingVm.gate.collectAsState()
+
+    // Wait until the persisted flags are actually known before composing the
+    // NavHost — its startDestination is captured once, so gating on still-loading
+    // defaults would make the wizard show/skip unreliably. Returning users who
+    // finished setup have onboardingDone=true persisted, so they go straight to
+    // Home and never see the wizard again.
+    when (val g = gate) {
+        AppGate.Loading   -> SplashScreen()
+        is AppGate.Ready  -> SousPantryAppScaffold(
+            startDest      = when {
+                !g.signedIn       -> Screen.Auth.route
+                !g.onboardingDone -> Screen.SetupWizard.route
+                else              -> Screen.Home.route
+            },
+            onboardingDone = g.onboardingDone,
+        )
     }
+}
+
+@Composable
+private fun SplashScreen() {
+    Box(modifier = Modifier.fillMaxSize().background(Navy), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(color = White)
+    }
+}
+
+@Composable
+private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean) {
     val navController = rememberNavController()
     val navBackStack  by navController.currentBackStackEntryAsState()
     val currentDest   = navBackStack?.destination
