@@ -7,6 +7,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,15 +79,24 @@ fun EReceiptSyncScreen(
                 color           = Color.White,
                 shadowElevation = 2.dp,
             ) {
-                Column(modifier = Modifier.padding(vertical = 14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)) {
-                        StepCircle("1"); Connector(); StepCircle("2"); Connector(); StepCircle("3")
+                Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
+                    // Circles + connector lines
+                    Row(
+                        modifier          = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        StepCircle("1")
+                        StepConnector()
+                        StepCircle("2")
+                        StepConnector()
+                        StepCircle("3")
                     }
-                    Spacer(Modifier.height(6.dp))
-                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                        StepLabel("Connect\nyour store")
-                        StepLabel("Open your\nreceipt")
-                        StepLabel("Tap Sync\nto import")
+                    Spacer(Modifier.height(10.dp))
+                    // Labels aligned under each circle
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        StepLabel("Connect\nyour store",   TextAlign.Start)
+                        StepLabel("Enable\nOne-tap Sync",  TextAlign.Center)
+                        StepLabel("Shop —\ntap to import", TextAlign.End)
                     }
                 }
             }
@@ -102,7 +113,7 @@ fun EReceiptSyncScreen(
                         store       = store,
                         lastSync    = state.lastSync[store.id],
                         onConnect   = { webStore = store },
-                        onRemove    = if (!store.isBuiltIn) ({ vm.removeCustomStore(store) }) else null,
+                        onRemove    = { vm.removeStore(store) },
                     )
                 }
 
@@ -118,9 +129,14 @@ fun EReceiptSyncScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Icon(Icons.Filled.AddCircle, null, tint = Green)
+                        Box(
+                            modifier         = Modifier.size(36.dp).clip(CircleShape).background(Green),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Filled.AddCircle, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                        }
                         Column(Modifier.weight(1f)) {
-                            Text("Add Store", color = Navy, fontWeight = FontWeight.SemiBold)
+                            Text("Add Store", color = Navy, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text("Connect any store with digital receipts", color = Slate, fontSize = 12.sp)
                         }
                         Icon(Icons.Filled.ChevronRight, null, tint = Slate.copy(alpha = 0.4f))
@@ -132,10 +148,11 @@ fun EReceiptSyncScreen(
             Row(
                 modifier              = Modifier.padding(20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment     = Alignment.Top,
             ) {
                 Icon(Icons.Filled.Lock, null, tint = Slate.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
                 Text(
-                    "Your login details are entered directly on the store's own site. Sous Pantry only reads the receipt text you choose to sync.",
+                    "Your login details are entered directly on the store's own site. Location is used only to detect when you leave a store and is never stored or shared.",
                     color    = Slate.copy(alpha = 0.7f),
                     fontSize = 12.sp,
                 )
@@ -155,11 +172,13 @@ fun EReceiptSyncScreen(
         )
     }
 
-    // ── Add custom store sheet ────────────────────────────────────────────────
+    // ── Add store sheet ───────────────────────────────────────────────────────
     if (showAddStore) {
         AddStoreSheet(
-            onDismiss = { showAddStore = false },
-            onSave    = { name, url -> vm.addCustomStore(name, url); showAddStore = false },
+            popularStores = state.available,
+            onConnect     = { store -> vm.connectStore(store); showAddStore = false },
+            onDismiss     = { showAddStore = false },
+            onSave        = { name, url -> vm.addCustomStore(name, url); showAddStore = false },
         )
     }
 }
@@ -167,33 +186,30 @@ fun EReceiptSyncScreen(
 // ── How-it-works step helpers ─────────────────────────────────────────────────
 
 @Composable
-private fun RowScope.StepCircle(number: String) {
+private fun StepCircle(number: String) {
     Box(
-        modifier         = Modifier.weight(1f),
+        modifier         = Modifier.size(36.dp).clip(CircleShape).background(Green),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier         = Modifier.size(24.dp).clip(CircleShape).background(Green),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(number, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
+        Text(number, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
-private fun Connector() {
-    Box(modifier = Modifier.width(20.dp).height(2.dp).background(SoftMint))
+private fun RowScope.StepConnector() {
+    Box(modifier = Modifier.weight(1f).height(2.dp).background(SoftMint))
 }
 
 @Composable
-private fun RowScope.StepLabel(text: String) {
+private fun RowScope.StepLabel(text: String, align: TextAlign) {
     Text(
         text,
-        color     = Slate,
-        fontSize  = 11.sp,
-        textAlign = TextAlign.Center,
-        modifier  = Modifier.weight(1f),
+        color      = Navy,
+        fontSize   = 12.sp,
+        lineHeight = 15.sp,
+        fontWeight = FontWeight.SemiBold,
+        textAlign  = align,
+        modifier   = Modifier.weight(1f),
     )
 }
 
@@ -429,47 +445,126 @@ private const val EXPAND_SCRIPT = """
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddStoreSheet(
-    onDismiss : () -> Unit,
-    onSave    : (name: String, url: String) -> Unit,
+    popularStores : List<Store>,
+    onConnect     : (Store) -> Unit,
+    onDismiss     : () -> Unit,
+    onSave        : (name: String, url: String) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var url  by remember { mutableStateOf("") }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Cream) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color.White, contentWindowInsets = { WindowInsets.ime }) {
         Column(
-            modifier            = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier            = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 32.dp).imePadding(),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Text("Add a Store", style = MaterialTheme.typography.headlineMedium, color = Navy, fontWeight = FontWeight.SemiBold)
-            Text(
-                "Enter the store name and the web address of its receipts / order history page.",
-                color    = Slate,
-                fontSize = 13.sp,
-            )
-            OutlinedTextField(
-                value         = name,
-                onValueChange = { name = it },
-                label         = { Text("Store name") },
-                singleLine    = true,
-                modifier      = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value         = url,
-                onValueChange = { url = it },
-                label         = { Text("Receipts page URL") },
-                placeholder   = { Text("https://…") },
-                singleLine    = true,
-                modifier      = Modifier.fillMaxWidth(),
-            )
+            // ── Header ─────────────────────────────────────────────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Add Store", style = MaterialTheme.typography.headlineMedium, color = Navy, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Filled.Close, "Close", tint = Slate.copy(alpha = 0.5f))
+                }
+            }
+
+            // ── Popular stores (horizontal pills) ──────────────────────────
+            if (popularStores.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("POPULAR STORES", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Row(
+                        modifier              = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        popularStores.forEach { store ->
+                            PopularStorePill(store = store, onClick = { onConnect(store) })
+                        }
+                    }
+                }
+            }
+
+            // ── Or add a custom store ──────────────────────────────────────
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Slate.copy(alpha = 0.2f))
+                Text("OR ADD A CUSTOM STORE", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Slate.copy(alpha = 0.2f))
+            }
+
+            // Store name
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Store name", color = Navy, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Cream) {
+                    TextField(
+                        value         = name,
+                        onValueChange = { name = it },
+                        placeholder   = { Text("e.g. FairPrice, Tesco", color = Slate.copy(alpha = 0.5f)) },
+                        singleLine    = true,
+                        modifier      = Modifier.fillMaxWidth(),
+                        colors        = transparentFieldColors(),
+                    )
+                }
+            }
+
+            // Receipt / Order history URL
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Receipt / Order history URL", color = Navy, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Cream) {
+                    TextField(
+                        value         = url,
+                        onValueChange = { url = it },
+                        placeholder   = { Text("https://www.store.com/orders", color = Slate.copy(alpha = 0.5f)) },
+                        singleLine    = true,
+                        modifier      = Modifier.fillMaxWidth(),
+                        colors        = transparentFieldColors(),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(4.dp))
+
             Button(
                 onClick  = { if (name.isNotBlank() && url.isNotBlank()) onSave(name.trim(), url.trim()) },
                 enabled  = name.isNotBlank() && url.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors   = ButtonDefaults.buttonColors(containerColor = Green),
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                colors   = ButtonDefaults.buttonColors(
+                    containerColor         = Green,
+                    disabledContainerColor = Slate.copy(alpha = 0.25f),
+                ),
                 shape    = RoundedCornerShape(14.dp),
             ) {
-                Text("Add Store", fontWeight = FontWeight.SemiBold)
+                Text("Add Custom Store", color = Color.White, fontWeight = FontWeight.SemiBold)
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun transparentFieldColors() = TextFieldDefaults.colors(
+    unfocusedContainerColor = Color.Transparent,
+    focusedContainerColor   = Color.Transparent,
+    unfocusedIndicatorColor = Color.Transparent,
+    focusedIndicatorColor   = Color.Transparent,
+)
+
+@Composable
+private fun PopularStorePill(store: Store, onClick: () -> Unit) {
+    Surface(
+        modifier        = Modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onClick),
+        shape           = RoundedCornerShape(24.dp),
+        color           = Color.White,
+        shadowElevation = 2.dp,
+    ) {
+        Row(
+            modifier              = Modifier.padding(start = 10.dp, end = 18.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(
+                modifier         = Modifier.size(28.dp).clip(CircleShape).background(storeColor(store.id)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(store.name.first().toString(), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(store.name, color = Navy, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
         }
     }
 }

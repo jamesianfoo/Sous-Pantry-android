@@ -64,6 +64,8 @@ class UserPreferencesRepository @Inject constructor(
 
         // eReceipt custom stores — each entry is "name|url".
         val KEY_CUSTOM_STORES    = stringSetPreferencesKey("ereceipt_custom_stores")
+        // eReceipt connected built-in stores — set of built-in store IDs the user added.
+        val KEY_CONNECTED_STORES = stringSetPreferencesKey("ereceipt_connected_stores")
     }
 
     // ── Reads ────────────────────────────────────────────────────────────────
@@ -105,6 +107,7 @@ class UserPreferencesRepository @Inject constructor(
     val forcePremium: Flow<Boolean>    = context.dataStore.data.map { it[KEY_FORCE_PREMIUM] ?: false }
 
     val customStores: Flow<Set<String>> = context.dataStore.data.map { it[KEY_CUSTOM_STORES] ?: emptySet() }
+    val connectedStores: Flow<Set<String>> = context.dataStore.data.map { it[KEY_CONNECTED_STORES] ?: emptySet() }
 
     // ── Writes ───────────────────────────────────────────────────────────────
 
@@ -140,6 +143,13 @@ class UserPreferencesRepository @Inject constructor(
     }
     suspend fun removeCustomStore(entry: String) = context.dataStore.edit { prefs ->
         prefs[KEY_CUSTOM_STORES] = (prefs[KEY_CUSTOM_STORES] ?: emptySet()) - entry
+    }
+
+    suspend fun addConnectedStore(id: String) = context.dataStore.edit { prefs ->
+        prefs[KEY_CONNECTED_STORES] = (prefs[KEY_CONNECTED_STORES] ?: emptySet()) + id
+    }
+    suspend fun removeConnectedStore(id: String) = context.dataStore.edit { prefs ->
+        prefs[KEY_CONNECTED_STORES] = (prefs[KEY_CONNECTED_STORES] ?: emptySet()) - id
     }
 
     suspend fun setSignedIn(on: Boolean)              = context.dataStore.edit { it[KEY_SIGNED_IN] = on }

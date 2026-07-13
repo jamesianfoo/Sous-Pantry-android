@@ -46,7 +46,10 @@ sealed interface SyncResult {
 }
 
 data class EReceiptState(
-    val stores      : List<Store>            = BUILT_IN_STORES,
+    /** Stores shown on the main screen — connected built-ins + custom stores. */
+    val stores      : List<Store>            = emptyList(),
+    /** Built-in stores not yet connected — shown as pills in the Add Store sheet. */
+    val available   : List<Store>            = BUILT_IN_STORES,
     val lastSync    : Map<String, Int>       = emptyMap(),   // storeId → item count
     val syncing     : Boolean                = false,
     val result      : SyncResult?            = null,
@@ -61,31 +64,43 @@ class EReceiptViewModel @Inject constructor(
 
     private val _transient = MutableStateFlow(EReceiptState())
 
-    val state: StateFlow<EReceiptState> = combine(prefs.customStores, _transient) { custom, t ->
-        val customStores = custom.mapNotNull { entry ->
-            val parts = entry.split("|", limit = 2)
-            if (parts.size == 2 && parts[1].isNotBlank())
-                Store(
-                    id         = "custom_${parts[0].hashCode()}",
-                    name       = parts[0],
-                    receiptUrl = parts[1],
-                    isBuiltIn  = false,
-                    customKey  = entry,
-                )
-            else null
-        }
-        t.copy(stores = BUILT_IN_STORES + customStores)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EReceiptState())
+    val state: StateFlow<EReceiptState> =
+        combine(prefs.customStores, prefs.connectedStores, _transient) { custom, connected, t ->
+            val customStores = custom.mapNotNull { entry ->
+                val parts = entry.split("|", limit = 2)
+                if (parts.size == 2 && parts[1].isNotBlank())
+                    Store(
+                        id         = "custom_${parts[0].hashCode()}",
+                        name       = parts[0],
+                        receiptUrl = parts[1],
+                        isBuiltIn  = false,
+                        customKey  = entry,
+                    )
+                else null
+            }
+            val connectedBuiltIns = BUILT_IN_STORES.filter { it.id in connected }
+            t.copy(
+                stores    = connectedBuiltIns + customStores,
+                available = BUILT_IN_STORES.filter { it.id !in connected },
+            )
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EReceiptState())
 
-    // ── Custom stores ─────────────────────────────────────────────────────────
+    // ── Stores ──────────────────────────────────────────────────────────────
+
+    /** Adds a built-in "popular" store to the main list. */
+    fun connectStore(store: Store) = viewModelScope.launch {
+        prefs.addConnectedStore(store.id)
+    }
 
     fun addCustomStore(name: String, url: String) = viewModelScope.launch {
         val normalised = if (url.startsWith("http")) url else "https://$url"
         prefs.addCustomStore(name, normalised)
     }
 
-    fun removeCustomStore(store: Store) = viewModelScope.launch {
-        store.customKey?.let { prefs.removeCustomStore(it) }
+    /** Removes a store from the main list — disconnects built-ins, deletes custom stores. */
+    fun removeStore(store: Store) = viewModelScope.launch {
+        if (store.isBuiltIn) prefs.removeConnectedStore(store.id)
+        else store.customKey?.let { prefs.removeCustomStore(it) }
     }
 
     // ── Sync ──────────────────────────────────────────────────────────────────

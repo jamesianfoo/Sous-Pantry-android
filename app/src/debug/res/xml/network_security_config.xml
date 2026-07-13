@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG-ONLY network security config.
+  Overrides the locked-down main config for debug builds so the app can reach a
+  local backend over cleartext HTTP regardless of the dev machine's DHCP IP.
+  Release builds still use src/main's config (HTTPS only) — this file is never packaged.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

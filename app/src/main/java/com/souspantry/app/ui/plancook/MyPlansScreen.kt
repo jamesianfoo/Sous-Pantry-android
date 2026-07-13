@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ShoppingCartCheckout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -745,6 +746,12 @@ fun AddCustomMealSheet(
     var mealName  by remember { mutableStateOf("") }
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color.White) {
+        val dialogView = LocalView.current
+        DisposableEffect(dialogView) {
+            val window = (dialogView.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+            window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            onDispose {}
+        }
         Column(
             modifier            = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),

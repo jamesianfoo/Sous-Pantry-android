@@ -36,7 +36,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.souspantry.app.R
 import com.souspantry.app.data.models.PantryItem
-import com.souspantry.app.data.models.SuggestedMeal
 import com.souspantry.app.ui.theme.*
 import java.util.Calendar
 
@@ -95,14 +94,11 @@ fun HomeScreen(
             }
 
             CookingStreakCard(
-                mealsThisWeek    = 0,        // TODO: wire to a future cooking-history store
-                totalMealsCooked = 0,
-            )
-
-            // Suggested recipes — keeps the existing API wiring
-            SuggestedSection(
-                state    = state,
-                onRetry  = { vm.loadSuggested() },
+                mealsThisWeek    = state.mealsThisWeek,
+                totalMealsCooked = state.totalMealsCooked,
+                currentStreak    = state.currentStreak,
+                weeklySavings    = state.weeklySavings,
+                cookedWeekdays   = state.cookedWeekdays,
             )
 
             Spacer(Modifier.height(40.dp))
@@ -486,6 +482,9 @@ private fun DonutChart(
 private fun CookingStreakCard(
     mealsThisWeek    : Int,
     totalMealsCooked : Int,
+    currentStreak    : Int,
+    weeklySavings    : Double,
+    cookedWeekdays   : Set<Int>,
 ) {
     Surface(
         modifier        = Modifier.fillMaxWidth().shadow(
@@ -499,80 +498,108 @@ private fun CookingStreakCard(
     ) {
         Column(
             modifier            = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Title row + optional streak flame (≥3 days)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("🍳", fontSize = 18.sp)
-                Spacer(Modifier.width(6.dp))
-                Text("Cooking streak", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.weight(1f))
-                // Flame pill placeholder — wire to streak service later
-                if (mealsThisWeek >= 3) {
-                    Surface(shape = CircleShape, color = Color(0xFFFF9800).copy(alpha = 0.12f)) {
-                        Row(
-                            verticalAlignment     = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
-                            modifier              = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        ) {
-                            Icon(
-                                Icons.Filled.LocalFireDepartment, null,
-                                tint     = Color(0xFFFF9800),
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Text(
-                                "$mealsThisWeek day${if (mealsThisWeek == 1) "" else "s"}",
-                                color      = Color(0xFFFF9800),
-                                fontSize   = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
+            // ── Section 1: meals + savings + progress ─────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Title row + streak flame pill (≥3 days)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🍳", fontSize = 16.sp)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Cooking streak", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    if (currentStreak >= 3) {
+                        Surface(shape = CircleShape, color = Color(0xFFFF9800).copy(alpha = 0.12f)) {
+                            Row(
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                modifier              = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            ) {
+                                Icon(Icons.Filled.LocalFireDepartment, null, tint = Color(0xFFFF9800), modifier = Modifier.size(12.dp))
+                                Text(
+                                    "$currentStreak day${if (currentStreak == 1) "" else "s"}",
+                                    color = Color(0xFFFF9800), fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // Meals cooked this week
-            Text(
-                "$mealsThisWeek meal${if (mealsThisWeek == 1) "" else "s"} cooked this week",
-                color      = Navy,
-                fontSize   = 15.sp,
-                fontWeight = FontWeight.Bold,
-            )
-
-            // Savings chip (placeholder $4.50 per meal heuristic — wire later)
-            val savings = mealsThisWeek * 4.50
-            Surface(shape = CircleShape, color = SoftMint) {
-                Text(
-                    "~ $${"%.2f".format(savings)} saved from eating out",
-                    color      = Green,
-                    fontSize   = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                )
-            }
-
-            // Progress toward next badge — placeholder progress bar + goal text
-            val (fraction, goalText) = nextBadgeInfo(totalMealsCooked)
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp)
-                        .clip(CircleShape)
-                        .background(Slate.copy(alpha = 0.15f)),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                            .fillMaxHeight()
-                            .clip(CircleShape)
-                            .background(Green),
+                // Meals + savings
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "$mealsThisWeek meal${if (mealsThisWeek == 1) "" else "s"} cooked this week",
+                        color = Navy, fontSize = 15.sp, fontWeight = FontWeight.Bold,
                     )
+                    Surface(shape = CircleShape, color = SoftMint) {
+                        Text(
+                            "~ $${"%.2f".format(weeklySavings)} saved from eating out",
+                            color      = Green,
+                            fontSize   = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
                 }
-                Text(goalText, color = Slate, fontSize = 11.sp)
+
+                // Progress toward next badge
+                val (fraction, goalText) = nextBadgeInfo(totalMealsCooked)
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape).background(Slate.copy(alpha = 0.15f)),
+                    ) {
+                        Box(modifier = Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).fillMaxHeight().clip(CircleShape).background(Green))
+                    }
+                    Text(goalText, color = Slate, fontSize = 12.sp)
+                }
             }
+
+            HorizontalDivider(thickness = 0.5.dp, color = Slate.copy(alpha = 0.15f))
+
+            // ── Section 2: daily streak dots ──────────────────────────────
+            DailyStreakSection(cookedWeekdays = cookedWeekdays, currentStreak = currentStreak)
         }
     }
+}
+
+@Composable
+private fun DailyStreakSection(cookedWeekdays: Set<Int>, currentStreak: Int) {
+    val labels   = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    // Mon = 0 … Sun = 6
+    val todayIdx = (java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("DAILY STREAK", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            labels.forEachIndexed { i, label ->
+                val isToday  = i == todayIdx
+                val isCooked = cookedWeekdays.contains(i)
+                val isFuture = i > todayIdx
+                val bg = when {
+                    isCooked -> Green
+                    isToday  -> Navy
+                    isFuture -> Color.Gray.copy(alpha = 0.15f)
+                    else     -> Color.Gray.copy(alpha = 0.25f)
+                }
+                val fg = if (isCooked || isToday) Color.White else Slate
+                Box(
+                    modifier         = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).background(bg).padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(label, color = fg, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+        Text(streakDayMessage(currentStreak), color = Navy, fontSize = 13.sp)
+    }
+}
+
+private fun streakDayMessage(streak: Int): String = when (streak) {
+    0       -> "Cook today to start a streak. Keep going!"
+    1       -> "1-day streak — Great start! Keep going!"
+    in 2..6 -> "$streak-day streak 🔥 Keep going!"
+    in 7..13-> "$streak-day streak 🔥 You're on fire! Keep going!"
+    else    -> "$streak-day streak 🔥 You're unstoppable!"
 }
 
 /** Mirrors iOS badge ladder. Returns (progressFraction, goalText). */
@@ -604,92 +631,3 @@ private fun nextBadgeInfo(total: Int): Pair<Float, String> {
     return frac to "$remaining more meal${if (remaining == 1) "" else "s"} to ${next.second}"
 }
 
-// ── Suggested recipes carousel ───────────────────────────────────────────────
-
-@Composable
-private fun SuggestedSection(state: HomeState, onRetry: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("✨", fontSize = 18.sp)
-            Text(
-                "Suggested for You",
-                color      = Navy,
-                fontSize   = 18.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        when {
-            state.suggestedLoading -> {
-                Box(
-                    modifier         = Modifier.fillMaxWidth().height(180.dp),
-                    contentAlignment = Alignment.Center,
-                ) { CircularProgressIndicator(color = Green) }
-            }
-            state.suggestedError -> {
-                Surface(
-                    modifier        = Modifier.fillMaxWidth(),
-                    shape           = RoundedCornerShape(14.dp),
-                    color           = Color.White,
-                    shadowElevation = 2.dp,
-                ) {
-                    Column(
-                        modifier            = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text("Couldn't load recipes", color = Navy, fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.height(4.dp))
-                        Text("Check your connection and try again.", color = Slate, fontSize = 13.sp)
-                        Spacer(Modifier.height(12.dp))
-                        Button(onClick = onRetry, colors = ButtonDefaults.buttonColors(containerColor = Green)) {
-                            Text("Retry")
-                        }
-                    }
-                }
-            }
-            else -> {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(state.suggestedRecipes) { meal ->
-                        RecipeCard(meal)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RecipeCard(meal: SuggestedMeal) {
-    val imageUrl = "https://loremflickr.com/400/300/${meal.imageQuery.replace(" ", ",")},food"
-    Surface(
-        modifier        = Modifier.width(200.dp).shadow(
-            elevation = 4.dp,
-            shape     = RoundedCornerShape(16.dp),
-        ),
-        shape           = RoundedCornerShape(16.dp),
-        color           = Color.White,
-    ) {
-        Column {
-            Box(modifier = Modifier.fillMaxWidth().height(120.dp)) {
-                AsyncImage(
-                    model              = imageUrl,
-                    contentDescription = meal.title,
-                    contentScale       = ContentScale.Crop,
-                    modifier           = Modifier.fillMaxSize(),
-                )
-                // Subtle bottom scrim for text contrast over the image edge
-                Box(
-                    modifier = Modifier.fillMaxSize().background(
-                        Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f))),
-                    ),
-                )
-            }
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(meal.title, color = Navy, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
-                Spacer(Modifier.height(4.dp))
-                Text(meal.description, color = Slate, fontSize = 12.sp, maxLines = 2)
-            }
-        }
-    }
-}

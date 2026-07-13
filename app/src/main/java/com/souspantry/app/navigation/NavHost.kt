@@ -1,9 +1,13 @@
 package com.souspantry.app.navigation
+import androidx.compose.ui.unit.dp
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
@@ -93,6 +97,7 @@ private fun SplashScreen() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, founderNoteSeen: Boolean) {
     val navController = rememberNavController()
@@ -132,7 +137,7 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
         NavHost(
             navController    = navController,
             startDestination = startDest,
-            modifier         = Modifier.padding(innerPadding),
+            modifier         = Modifier.padding(top = innerPadding.calculateTopPadding(), bottom = if (WindowInsets.isImeVisible) 0.dp else innerPadding.calculateBottomPadding()),
         ) {
             composable(Screen.Home.route)     {
                 HomeScreen(

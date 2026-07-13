@@ -76,7 +76,7 @@ class ReceiptScanViewModel @Inject constructor(
         }
 
     fun saveAll(items: List<ReceiptLineItem>) = viewModelScope.launch {
-        repo.addAll(items.map { PantryItem(name = it.name, category = it.category) })
+        repo.addAll(items.map { PantryItem(name = it.name, category = it.category, notes = it.quantity) })
         _state.value = ReceiptScanState.Saved
     }
 

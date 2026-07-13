@@ -410,7 +410,7 @@ private fun Composer(
         color           = Cream,
         shadowElevation = 0.dp,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().imePadding().padding(vertical = 8.dp)) {
             // Hairline separator at top
             HorizontalDivider(thickness = 0.5.dp, color = Slate.copy(alpha = 0.15f))
             Spacer(Modifier.height(8.dp))

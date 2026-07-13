@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -483,7 +484,13 @@ fun RecipeEditorSheet(
         onDismissRequest = onDismiss,
         containerColor   = Cream,
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        val dialogView = LocalView.current
+        DisposableEffect(dialogView) {
+            val window = (dialogView.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+            window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            onDispose {}
+        }
+        Column(modifier = Modifier.fillMaxWidth()) {
             // ── Toolbar ─────────────────────────────────────────────────────
             Row(
                 modifier          = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),

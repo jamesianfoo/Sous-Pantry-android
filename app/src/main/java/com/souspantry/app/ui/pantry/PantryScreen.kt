@@ -51,7 +51,7 @@ import java.util.*
 
 // ── Canonical category order (mirrors iOS PantryItem.categoryOrder) ──────────
 
-private val CATEGORY_ORDER = listOf(
+internal val CATEGORY_ORDER = listOf(
     "Fruits", "Vegetables", "Meat & Seafood", "Dairy & Eggs", "Bakery & Bread",
     "Pantry & Dry Goods", "Frozen", "Snacks & Confectionery", "Beverages",
     "Condiments & Sauces", "Breakfast & Cereals", "Baby & Toddler",
