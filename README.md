@@ -9,26 +9,10 @@ Kotlin · Jetpack Compose (Material 3) · Hilt · Room · DataStore · Retrofit/
 **Requirements:** Android Studio (recent), JDK 17. The app targets SDK 35 and runs on Android 8.0 (API 26) and up.
 
 1. Clone the repo and open the project root in Android Studio.
-2. Create `local.properties` in the project root (it's git-ignored — never commit it):
-
-   ```properties
-   sdk.dir=/Users/<you>/Library/Android/sdk
-   SP_PROXY_SECRET=<app secret>
-   UNSPLASH_ACCESS_KEY=<unsplash access key>
-   BASE_URL=http://127.0.0.1:3010
-   ```
-
+2. Get `local.properties` from James and put it in the project root. It holds the app's private settings, is git-ignored, and must never be committed.
 3. **File → Sync Project with Gradle Files**, then **Run**.
 
-`SP_PROXY_SECRET` and `UNSPLASH_ACCESS_KEY` are compiled into `BuildConfig`, so changing either needs a rebuild, not just a sync.
-
-### Configuration
-
-| Key | Required | What it does |
-|---|---|---|
-| `SP_PROXY_SECRET` | Yes, for AI features | App-scoped token the Worker checks as `Authorization: Bearer …`. Same value as the iOS app's worker secret. **Not** an Anthropic key. |
-| `UNSPLASH_ACCESS_KEY` | No | Cuisine-generic stand-in photos while a dish's real image generates. Without it, cards show a cuisine colour instead. |
-| `BASE_URL` | Only for backend-only features | The optional local Node backend (see below). Release builds use `https://api.souspantry.com`. |
+Settings in `local.properties` are compiled into the app, so changing them needs a rebuild, not just a sync.
 
 ## How it works
 
@@ -44,7 +28,7 @@ Kotlin · Jetpack Compose (Material 3) · Hilt · Room · DataStore · Retrofit/
 - **Barcode lookup** (`/api/barcode`)
 - **Recipe text scanning** (`/api/recipe/scan-text`)
 
-It's also the fallback for AI features when `SP_PROXY_SECRET` is blank. To run it on a USB-connected phone:
+It's also the fallback for AI features when the app's settings aren't configured. To run it on a USB-connected phone:
 
 ```bash
 cd backend && npm install && npm start
@@ -93,7 +77,7 @@ Unit tests cover the pure logic: the link resolver, pantry staples, the buy list
 
 **"I'm having trouble reaching the kitchen brain"** is a catch-all error. Check in this order:
 
-1. `app/build/generated/source/buildConfig/debug/com/souspantry/app/BuildConfig.java` contains a non-empty `SP_PROXY_SECRET`. If it's empty, rebuild after editing `local.properties`.
+1. `local.properties` is set up, and the app was rebuilt (not just synced) after it last changed.
 2. `adb logcat -s PlanCookVM:E` shows the real exception.
 3. If you're using the local backend: it's running, it's the copy in *this* repo (only it has `/api/meals/chat`), and `adb reverse` is active.
 
