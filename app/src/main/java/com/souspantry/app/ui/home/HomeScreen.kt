@@ -44,12 +44,13 @@ private val DONUT_PALETTE = listOf(
     Color(0xFF2D5A3D), // Green
     Color(0xFF162437), // Navy
     Color(0xFFC4965A), // Gold
-    Color(0xFFFF9800), // Orange
+    Color(0xFFC76F3F), // Orange
     Color(0xFF8C3FBF), // Purple (iOS rgb(0.55, 0.25, 0.75))
 )
 
 private val LIME_HIGHLIGHT = Color(0xFF2CFF05)
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     onNavigateToTab : (String) -> Unit = {},
@@ -84,6 +85,23 @@ fun HomeScreen(
                 onViewShopping      = { onNavigateToTab("shopping") },
                 onPriceTrendsTap    = { /* Price Trends sheet — future */ },
             )
+
+            // "No {ingredient}" badges for avoided ingredients (mirrors iOS HomeView).
+            if (state.avoidIngredients.isNotEmpty()) {
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement   = Arrangement.spacedBy(6.dp),
+                ) {
+                    state.avoidIngredients.sortedBy { it.lowercase() }.forEach { ing ->
+                        Surface(shape = RoundedCornerShape(50), color = Slate.copy(alpha = 0.12f)) {
+                            Text(
+                                "No $ing", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
 
             if (state.pantryItems.isNotEmpty()) {
                 PantryHealthCard(
@@ -198,7 +216,7 @@ private fun AuditRow(item: PantryItem) {
     val nowMs = System.currentTimeMillis()
     val days  = item.expiryDate?.let { ((it - nowMs) / 86_400_000L).toInt() } ?: 0
     val (label, dotColor) = when {
-        days < 0  -> "Expired"     to Color(0xFFE53935)
+        days < 0  -> "Expired"     to Color(0xFFB23A48)
         days == 0 -> "Today"       to Color(0xFFFFB74D)
         days <= 3 -> "$days days"  to Color(0xFFFFB74D)
         else      -> "$days days"  to Color(0xFFFFD54F)
@@ -509,16 +527,16 @@ private fun CookingStreakCard(
                     Text("Cooking streak", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.weight(1f))
                     if (currentStreak >= 3) {
-                        Surface(shape = CircleShape, color = Color(0xFFFF9800).copy(alpha = 0.12f)) {
+                        Surface(shape = CircleShape, color = Color(0xFFC76F3F).copy(alpha = 0.12f)) {
                             Row(
                                 verticalAlignment     = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(3.dp),
                                 modifier              = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             ) {
-                                Icon(Icons.Filled.LocalFireDepartment, null, tint = Color(0xFFFF9800), modifier = Modifier.size(12.dp))
+                                Icon(Icons.Filled.LocalFireDepartment, null, tint = Color(0xFFC76F3F), modifier = Modifier.size(12.dp))
                                 Text(
                                     "$currentStreak day${if (currentStreak == 1) "" else "s"}",
-                                    color = Color(0xFFFF9800), fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFC76F3F), fontSize = 12.sp, fontWeight = FontWeight.Bold,
                                 )
                             }
                         }

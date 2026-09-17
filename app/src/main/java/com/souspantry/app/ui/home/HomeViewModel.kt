@@ -13,8 +13,9 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 data class HomeState(
-    val userName    : String          = "",
-    val pantryItems : List<PantryItem> = emptyList(),
+    val userName        : String           = "",
+    val pantryItems     : List<PantryItem> = emptyList(),
+    val avoidIngredients: Set<String>      = emptySet(),
 
     // Cooking streak — no cooking-history store yet, so these stay at defaults.
     val mealsThisWeek    : Int      = 0,
@@ -55,7 +56,7 @@ class HomeViewModel @Inject constructor(
     private val prefs : UserPreferencesRepository,
 ) : ViewModel() {
 
-    val state: StateFlow<HomeState> = combine(repo.items, prefs.userName) { items, name ->
-        HomeState(pantryItems = items, userName = name)
+    val state: StateFlow<HomeState> = combine(repo.items, prefs.userName, prefs.avoidIngredients) { items, name, avoid ->
+        HomeState(pantryItems = items, userName = name, avoidIngredients = avoid)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 }
