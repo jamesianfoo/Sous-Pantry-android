@@ -47,7 +47,7 @@ fun EReceiptSyncScreen(
     var webStore     by remember { mutableStateOf<Store?>(null) }
     var showAddStore by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize().background(Cream)) {
+    Box(modifier = Modifier.fillMaxSize().background(Beige)) {
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp),
         ) {
@@ -75,7 +75,7 @@ fun EReceiptSyncScreen(
             )
             Surface(
                 modifier        = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                shape           = RoundedCornerShape(14.dp),
+                shape           = RoundedCornerShape(16.dp),
                 color           = Color.White,
                 shadowElevation = 2.dp,
             ) {
@@ -120,7 +120,7 @@ fun EReceiptSyncScreen(
                 // Add store
                 Surface(
                     modifier        = Modifier.fillMaxWidth().clickable { showAddStore = true },
-                    shape           = RoundedCornerShape(14.dp),
+                    shape           = RoundedCornerShape(16.dp),
                     color           = Color.White,
                     shadowElevation = 2.dp,
                 ) {
@@ -224,7 +224,7 @@ private fun StoreCard(
 ) {
     Surface(
         modifier        = Modifier.fillMaxWidth(),
-        shape           = RoundedCornerShape(14.dp),
+        shape           = RoundedCornerShape(16.dp),
         color           = Color.White,
         shadowElevation = 2.dp,
     ) {
@@ -269,7 +269,7 @@ private fun StoreCard(
 
 private fun storeColor(id: String): Color = when {
     id.contains("woolworths") -> Color(0xFF008745)
-    id.contains("coles")      -> Color(0xFFD81F1F)
+    id.contains("coles")      -> Color(0xFFB23A48)
     else                      -> Slate
 }
 
@@ -295,14 +295,12 @@ private fun ReceiptWebView(
         wv.evaluateJavascript(EXPAND_SCRIPT, null)
         delay(1500)
         wv.evaluateJavascript("document.body.innerText") { raw ->
-            // raw is a JSON-encoded string; strip quotes and unescape
-            val text = raw
-                ?.removeSurrounding("\"")
-                ?.replace("\\n", "\n")
-                ?.replace("\\t", "\t")
-                ?.replace("\\\"", "\"")
-                ?.replace("\\\\", "\\")
-                ?: ""
+            // evaluateJavascript hands back a JSON literal ("null" when there's no body).
+            // Decode it as JSON; hand-unescaping mangled unicode escapes and quotes.
+            val text = runCatching {
+                com.google.gson.JsonParser.parseString(raw ?: "null")
+                    .takeIf { it.isJsonPrimitive }?.asString
+            }.getOrNull().orEmpty()
             onSync(text)
         }
         triggerSync = false
@@ -365,7 +363,7 @@ private fun ReceiptWebView(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(Icons.Filled.Info, null, tint = Slate, modifier = Modifier.size(18.dp))
-                    Text(receiptInstruction(store.id), color = Navy, fontSize = 12.sp)
+                    Text(store.hint, color = Navy, fontSize = 12.sp)
                 }
             }
         }
@@ -395,7 +393,7 @@ private fun ReceiptWebView(
             val isError = r is SyncResult.Error
             Surface(
                 modifier        = Modifier.align(Alignment.BottomCenter).padding(16.dp).navigationBarsPadding(),
-                shape           = RoundedCornerShape(14.dp),
+                shape           = RoundedCornerShape(16.dp),
                 color           = Color.White,
                 shadowElevation = 8.dp,
             ) {
@@ -430,7 +428,7 @@ private fun ReceiptWebView(
 
 private const val EXPAND_SCRIPT = """
 (function() {
-    var keywords = ['view all', 'show all', 'see all', 'show more', 'view order'];
+    var keywords = ['view all', 'show all', 'see all', 'show more'];
     document.querySelectorAll('button, a, [role="button"], span, div').forEach(function(el) {
         var t = (el.textContent || '').toLowerCase().trim();
         if (keywords.some(function(k) { return t.startsWith(k); })) {
@@ -528,7 +526,7 @@ private fun AddStoreSheet(
                     containerColor         = Green,
                     disabledContainerColor = Slate.copy(alpha = 0.25f),
                 ),
-                shape    = RoundedCornerShape(14.dp),
+                shape    = RoundedCornerShape(16.dp),
             ) {
                 Text("Add Custom Store", color = Color.White, fontWeight = FontWeight.SemiBold)
             }

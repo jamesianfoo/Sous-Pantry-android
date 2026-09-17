@@ -10,7 +10,11 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.data.models.ReceiptLineItem
 import com.souspantry.app.data.repository.PantryRepository
+import com.souspantry.app.data.local.UserPreferencesRepository
 import com.souspantry.app.services.ApiService
+import com.souspantry.app.services.DirectClaude
+import com.souspantry.app.ui.funnel.REGION_SHOPS
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,8 +43,10 @@ sealed interface ReceiptScanState {
  */
 @HiltViewModel
 class ReceiptScanViewModel @Inject constructor(
-    private val api  : ApiService,
-    private val repo : PantryRepository,
+    private val api    : ApiService,
+    private val claude : DirectClaude,
+    private val prefs  : UserPreferencesRepository,
+    private val repo   : PantryRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<ReceiptScanState>(ReceiptScanState.Ready)
@@ -54,7 +60,13 @@ class ReceiptScanViewModel @Inject constructor(
             if (ocrText.isBlank()) {
                 error("No text detected. Make sure the receipt is well-lit and in focus.")
             }
-            api.parseReceiptText(mapOf("text" to ocrText))
+            // Same store-agnostic parser as eReceipt sync, via the Worker proxy.
+            if (claude.enabled) {
+                val region = prefs.funnelRegion.first().ifBlank { "AU" }
+                claude.parseReceiptText(ocrText, REGION_SHOPS[region].orEmpty().map { it.label }, CATEGORY_ORDER).items
+            } else {
+                api.parseReceiptText(mapOf("text" to ocrText))
+            }
         }
             .onSuccess { _state.value = ReceiptScanState.Results(it) }
             .onFailure { e ->
@@ -76,7 +88,9 @@ class ReceiptScanViewModel @Inject constructor(
         }
 
     fun saveAll(items: List<ReceiptLineItem>) = viewModelScope.launch {
-        repo.addAll(items.map { PantryItem(name = it.name, category = it.category, notes = it.quantity) })
+        repo.addAll(items.map {
+            PantryItem(name = it.name, category = it.category, quantity = it.count.coerceAtLeast(1), notes = it.quantity)
+        })
         _state.value = ReceiptScanState.Saved
     }
 

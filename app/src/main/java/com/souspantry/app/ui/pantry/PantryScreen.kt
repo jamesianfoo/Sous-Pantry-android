@@ -116,7 +116,7 @@ fun PantryScreen(
                             grouped.keys.filterNot { CATEGORY_ORDER.contains(it) }
     val availableCategories = items.mapNotNull { it.category }.distinct()
 
-    Box(modifier = Modifier.fillMaxSize().background(Cream)) {
+    Box(modifier = Modifier.fillMaxSize().background(Beige)) {
 
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -236,7 +236,7 @@ fun PantryScreen(
             confirmButton    = {
                 TextButton(onClick = {
                     vm.delete(item); pendingSingleDelete = null
-                }) { Text("Delete", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold) }
+                }) { Text("Delete", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton    = { TextButton(onClick = { pendingSingleDelete = null }) { Text("Cancel") } },
             title            = { Text("Delete \"${item.name}\"?") },
@@ -255,7 +255,7 @@ fun PantryScreen(
                     selectedIds.clear()
                     isMultiSelectMode = false
                     pendingBulkDelete = false
-                }) { Text("Delete", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold) }
+                }) { Text("Delete", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton    = { TextButton(onClick = { pendingBulkDelete = false }) { Text("Cancel") } },
             title            = { Text("Delete $count item${if (count == 1) "" else "s"}?") },
@@ -320,7 +320,7 @@ private fun HeaderBar(
                 TextButton(onClick = onBulkDelete, enabled = selectedCount > 0, contentPadding = PaddingValues(0.dp)) {
                     Text(
                         text       = "Delete${if (selectedCount > 0) " ($selectedCount)" else ""}",
-                        color      = if (selectedCount > 0) Color(0xFFD32F2F) else Slate,
+                        color      = if (selectedCount > 0) Color(0xFFB23A48) else Slate,
                         fontWeight = FontWeight.SemiBold,
                         style      = MaterialTheme.typography.labelLarge,
                     )
@@ -471,7 +471,7 @@ private fun CategoryFilterPills(
             FilterPill("New ($newCount)",      specialFilter == "New",      Green) { onSelectSpecial("New") }
         }
         if (expiringCount > 0) {
-            FilterPill("Expiring ($expiringCount)", specialFilter == "Expiring", Color(0xFFEF6C00)) { onSelectSpecial("Expiring") }
+            FilterPill("Expiring ($expiringCount)", specialFilter == "Expiring", Color(0xFFC76F3F)) { onSelectSpecial("Expiring") }
         }
         // categories — keep canonical order, then any others
         val orderedCats = CATEGORY_ORDER.filter { availableCategories.contains(it) } +
@@ -543,11 +543,11 @@ private fun SectionedContent(
                 item(key = "card-$category") {
                     Surface(
                         modifier        = Modifier.fillMaxWidth().shadow(
-                            elevation = 6.dp, shape = RoundedCornerShape(14.dp),
+                            elevation = 6.dp, shape = RoundedCornerShape(16.dp),
                             ambientColor = Navy.copy(alpha = 0.06f),
                             spotColor    = Navy.copy(alpha = 0.06f),
                         ),
-                        shape           = RoundedCornerShape(14.dp),
+                        shape           = RoundedCornerShape(16.dp),
                         color           = Color.White,
                     ) {
                         Column {
@@ -714,7 +714,7 @@ private fun RowMenu(onEdit: () -> Unit, onDelete: () -> Unit) {
             )
             DropdownMenuItem(
                 text        = { Text("Remove") },
-                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFD32F2F)) },
+                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFB23A48)) },
                 onClick     = { open = false; onDelete() },
             )
         }
@@ -783,9 +783,9 @@ private fun ExpiryLabel(epochMillis: Long) {
     val days  = ((epochMillis - nowMs) / 86_400_000L).toInt()
 
     val (label, color) = when {
-        days < 0  -> "Expired"  to Color(0xFFD32F2F)
-        days == 0 -> "Today"    to Color(0xFFEF6C00)
-        days <= 7 -> "$days day${if (days == 1) "" else "s"}" to Color(0xFFEF6C00)
+        days < 0  -> "Expired"  to Color(0xFFB23A48)
+        days == 0 -> "Today"    to Color(0xFFC76F3F)
+        days <= 7 -> "$days day${if (days == 1) "" else "s"}" to Color(0xFFC76F3F)
         else      -> SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(epochMillis)) to Slate
     }
     Text(label, fontSize = 11.sp, color = color, fontWeight = FontWeight.Medium)

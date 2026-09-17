@@ -153,7 +153,7 @@ fun ReceiptScanScreen(
                                 if (idx < editable.size) editable.removeAt(idx)
                                 pendingDelete = null
                             }) {
-                                Text("Remove", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
+                                Text("Remove", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold)
                             }
                         },
                         dismissButton    = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } },
@@ -166,7 +166,7 @@ fun ReceiptScanScreen(
         }
 
         if (state is ReceiptScanState.Error) {
-            Box(Modifier.fillMaxSize().background(Cream), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Beige), contentAlignment = Alignment.Center) {
                 Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text((state as ReceiptScanState.Error).message, style = MaterialTheme.typography.bodyLarge)
                     Spacer(Modifier.height(16.dp))
@@ -255,7 +255,7 @@ private fun EditReceiptItemSheet(
                     containerColor         = Green,
                     disabledContainerColor = Slate.copy(alpha = 0.25f),
                 ),
-                shape    = RoundedCornerShape(14.dp),
+                shape    = RoundedCornerShape(16.dp),
             ) {
                 Text("Save", color = Color.White, fontWeight = FontWeight.SemiBold)
             }
