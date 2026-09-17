@@ -16,14 +16,11 @@ Settings in `local.properties` are compiled into the app, so changing them needs
 
 ## How it works
 
-**No provider keys ship in the app.** Every model call goes through the shared Cloudflare Worker (`souspantry-images.souspantry.workers.dev`), which holds the Anthropic and ILMU keys server-side:
-
-- `POST /anthropic` — Anthropic Messages pass-through, used by `services/DirectClaude.kt` for chat, shopping lists and receipt parsing. An `X-SP-Region` header lets the Worker route some countries (e.g. Malaysia) to ILMU; responses come back in the same shape either way.
-- `GET /img/<slug>.webp` and `POST /generate` — the recipe image store shared with iOS (`services/RecipeImages.kt`). The slug must match the Worker's `slugKey()` exactly, or Android looks up a different image than iOS generated.
+**No provider keys ship in the app.** AI features and recipe images go through a server-side proxy shared with the iOS app, so both apps show the same results and images.
 
 ### The optional local backend
 
-`backend/` is a small Express server kept for features that haven't moved to the Worker yet:
+`backend/` is a small Express server kept for features that haven't moved to the proxy yet:
 
 - **Barcode lookup** (`/api/barcode`)
 - **Recipe text scanning** (`/api/recipe/scan-text`)
@@ -46,7 +43,7 @@ Use `npm start`, not `npm run dev`. The tunnel drops whenever the phone is unplu
 app/src/main/java/com/souspantry/app/
 ├── data/          Room entities, DAOs, DataStore preferences, models
 ├── navigation/    NavHost, bottom nav, app start gating
-├── services/      Worker/AI client, recipe links, images, ingredient logic
+├── services/      AI client, recipe links, images, ingredient logic
 └── ui/
     ├── funnel/    21-step onboarding funnel (region, shops, diet, moods)
     ├── pantry/    Pantry list, barcode and paper-receipt scanning
@@ -61,7 +58,7 @@ backend/           Optional Node backend (see above)
 Worth knowing before you change these areas:
 
 - **Pantry staples** (`IngredientStaples.kt`): salt, pepper, water, sugar and basic oils always count as on hand. Matching is exact, so "salted butter" and "olive oil" are real ingredients.
-- **Pasted recipe URLs** (`RecipeLinkResolver.kt`): a link the user pasted is always opened directly and never replaced by a search. It scrapes pages with a bare HTTP client so the app secret is never sent to third-party sites.
+- **Pasted recipe URLs** (`RecipeLinkResolver.kt`): a link the user pasted is always opened directly and never replaced by a search.
 - **What to buy** (`BuyList.kt`): built from the recipe page's real ingredients when the page publishes them; the AI's guess is only a fallback.
 - **eReceipt sync**: one store-agnostic pipeline for every supermarket. Stores per region live in `REGION_STORES`. Don't add per-store parsing.
 
