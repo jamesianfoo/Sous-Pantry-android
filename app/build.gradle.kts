@@ -29,6 +29,18 @@ android {
 
         val baseUrl = localProps.getProperty("BASE_URL") ?: "http://10.0.2.2:3000"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+
+        // App secret for the shared Cloudflare Worker AI proxy. Provider keys
+        // (Anthropic/ILMU) live in the Worker and never ship in the APK; this
+        // secret is app-scoped, rate-limited and rotatable at the Worker.
+        val proxySecret = localProps.getProperty("SP_PROXY_SECRET") ?: ""
+        buildConfigField("String", "SP_PROXY_SECRET", "\"$proxySecret\"")
+
+        // Unsplash key for the cuisine-generic image fallback (same key as iOS
+        // APIConfig.unsplashAccessKey). Blank = no fallback photo; cards keep
+        // their cuisine gradient until the accurate Worker image exists.
+        val unsplashKey = localProps.getProperty("UNSPLASH_ACCESS_KEY") ?: ""
+        buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"$unsplashKey\"")
     }
 
     buildTypes {

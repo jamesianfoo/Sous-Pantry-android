@@ -25,27 +25,30 @@ interface ApiService {
     // ── Meal plan ─────────────────────────────────────────────────────────────
 
     @POST("api/meals/generate")
-    suspend fun generateMeals(@Body body: Map<String, Any>): List<SuggestedMeal>
+    suspend fun generateMeals(@Body body: Map<String, @JvmSuppressWildcards Any>): List<SuggestedMeal>
 
     @POST("api/meals/trending")
     suspend fun fetchTrending(@Body body: Map<String, String>): List<TrendingRecipe>
 
     @POST("api/meals/pantry")
-    suspend fun fetchPantryMeals(@Body body: Map<String, Any>): List<SuggestedMeal>
+    suspend fun fetchPantryMeals(@Body body: Map<String, @JvmSuppressWildcards Any>): List<SuggestedMeal>
 
     @POST("api/meals/adventurous")
-    suspend fun fetchAdventurous(@Body body: Map<String, Any>): List<AdventurousRecipe>
+    suspend fun fetchAdventurous(@Body body: Map<String, @JvmSuppressWildcards Any>): List<AdventurousRecipe>
 
     @POST("api/meals/suggested")
     suspend fun fetchSuggestedMeals(@Body body: Map<String, String>): List<SuggestedMeal>
 
+    @POST("api/meals/chat")
+    suspend fun chatMeals(@Body body: Map<String, @JvmSuppressWildcards Any>): List<SuggestedMeal>
+
     // ── Shopping ──────────────────────────────────────────────────────────────
 
     @POST("api/shopping/generate")
-    suspend fun generateShoppingList(@Body body: Map<String, Any>): List<ShoppingItem>
+    suspend fun generateShoppingList(@Body body: Map<String, @JvmSuppressWildcards Any>): List<ShoppingItem>
 
     @POST("api/shopping/staples")
-    suspend fun generateStaples(@Body body: Map<String, Any>): List<ShoppingItem>
+    suspend fun generateStaples(@Body body: Map<String, @JvmSuppressWildcards Any>): List<ShoppingItem>
 
     // ── Barcode ───────────────────────────────────────────────────────────────
 

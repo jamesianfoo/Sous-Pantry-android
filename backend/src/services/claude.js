@@ -11,10 +11,11 @@ const ENDPOINT = 'https://api.anthropic.com/v1/messages';
  * @param {object} opts
  * @param {string} opts.prompt       - User message text
  * @param {number} [opts.maxTokens]  - Default 2000
+ * @param {string} [opts.model]      - Default 'claude-sonnet-4-6'
  * @param {Array}  [opts.content]    - Override the full content array (for vision)
  * @returns {Promise<string>}        - The text of the first content block
  */
-async function callClaude({ prompt, maxTokens = 2000, content }) {
+async function callClaude({ prompt, maxTokens = 2000, model = 'claude-sonnet-4-6', content }) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key || key === 'sk-ant-api03-YOUR_KEY_HERE') {
     throw Object.assign(new Error('ANTHROPIC_API_KEY not configured'), { status: 503 });
@@ -26,7 +27,7 @@ async function callClaude({ prompt, maxTokens = 2000, content }) {
 
   const { data } = await axios.post(
     ENDPOINT,
-    { model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages },
+    { model, max_tokens: maxTokens, messages },
     {
       headers: {
         'Content-Type':    'application/json',
