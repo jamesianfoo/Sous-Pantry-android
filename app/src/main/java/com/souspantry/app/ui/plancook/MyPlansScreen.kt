@@ -166,7 +166,7 @@ fun MyPlansScreen(
             onDismissRequest = { pendingDelete = null },
             confirmButton    = {
                 TextButton(onClick = { vm.removeEntry(entry.id); pendingDelete = null }) {
-                    Text("Remove", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
+                    Text("Remove", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton    = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } },
@@ -382,8 +382,8 @@ private fun MealEntryRow(
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text        = { Text("Remove", color = Color(0xFFD32F2F)) },
-                                leadingIcon = { Icon(Icons.Filled.Remove, null, tint = Color(0xFFD32F2F)) },
+                                text        = { Text("Remove", color = Color(0xFFB23A48)) },
+                                leadingIcon = { Icon(Icons.Filled.Remove, null, tint = Color(0xFFB23A48)) },
                                 onClick     = { menuOpen = false; onRemove() },
                             )
                         }
@@ -516,7 +516,7 @@ fun MealDetailSheet(
             // ── Header card ─────────────────────────────────────────────────
             Surface(
                 modifier        = Modifier.fillMaxWidth(),
-                shape           = RoundedCornerShape(14.dp),
+                shape           = RoundedCornerShape(16.dp),
                 color           = Color.White,
                 shadowElevation = 4.dp,
             ) {
@@ -591,7 +591,7 @@ fun MealDetailSheet(
                     }
                     Surface(
                         modifier        = Modifier.fillMaxWidth(),
-                        shape           = RoundedCornerShape(14.dp),
+                        shape           = RoundedCornerShape(16.dp),
                         color           = Color.White,
                         shadowElevation = 3.dp,
                     ) {
@@ -661,7 +661,7 @@ fun MealDetailSheet(
                     Text("HOW TO COOK", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     Surface(
                         modifier        = Modifier.fillMaxWidth(),
-                        shape           = RoundedCornerShape(14.dp),
+                        shape           = RoundedCornerShape(16.dp),
                         color           = Color.White,
                         shadowElevation = 3.dp,
                     ) {
@@ -701,7 +701,7 @@ fun MealDetailSheet(
                     onClick  = { onMarkCooked(checkedItems.toList()); onDismiss() },
                     modifier = Modifier.fillMaxWidth().height(54.dp),
                     colors   = ButtonDefaults.buttonColors(containerColor = Green),
-                    shape    = RoundedCornerShape(14.dp),
+                    shape    = RoundedCornerShape(16.dp),
                 ) {
                     Icon(Icons.Filled.CheckCircle, null, tint = Color.White)
                     Spacer(Modifier.width(8.dp))
@@ -715,16 +715,16 @@ fun MealDetailSheet(
                         .clip(RoundedCornerShape(12.dp))
                         .clickable(onClick = onRemove),
                     shape  = RoundedCornerShape(12.dp),
-                    color  = Color(0xFFD32F2F).copy(alpha = 0.07f),
+                    color  = Color(0xFFB23A48).copy(alpha = 0.07f),
                 ) {
                     Row(
                         modifier          = Modifier.fillMaxWidth().padding(vertical = 14.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Filled.Remove, null, tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Remove, null, tint = Color(0xFFB23A48), modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Remove from My Plans", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
+                        Text("Remove from My Plans", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -791,7 +791,7 @@ fun AddCustomMealSheet(
                     containerColor = if (mealName.isNotBlank()) Green else Slate.copy(alpha = 0.3f),
                 ),
                 enabled  = mealName.isNotBlank(),
-                shape    = RoundedCornerShape(14.dp),
+                shape    = RoundedCornerShape(16.dp),
             ) {
                 Text("Save", fontWeight = FontWeight.SemiBold, color = Color.White)
             }
@@ -849,7 +849,7 @@ fun MoveToOtherDaySheet(
                 onClick  = { onMove(selectedDate) },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors   = ButtonDefaults.buttonColors(containerColor = Green),
-                shape    = RoundedCornerShape(14.dp),
+                shape    = RoundedCornerShape(16.dp),
             ) {
                 Text("Move to ${fmt.format(selectedDate)}", fontWeight = FontWeight.SemiBold, color = Color.White)
             }
@@ -911,7 +911,7 @@ fun AddToWeekSheet(
                 onClick  = { onAdd(selectedDate) },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors   = ButtonDefaults.buttonColors(containerColor = Green),
-                shape    = RoundedCornerShape(14.dp),
+                shape    = RoundedCornerShape(16.dp),
             ) {
                 Text(saveLabel, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
@@ -924,6 +924,6 @@ fun AddToWeekSheet(
 private fun difficultyColor(difficulty: String): Color = when (difficulty.lowercase()) {
     "easy"   -> Color(0xFF2D5A3D)
     "medium" -> Color(0xFFC4965A)
-    "hard"   -> Color(0xFFD32F2F)
+    "hard"   -> Color(0xFFB23A48)
     else     -> Color(0xFF647080)
 }

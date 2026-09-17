@@ -2,6 +2,7 @@ package com.souspantry.app.data.repository
 
 import androidx.room.*
 import com.souspantry.app.data.models.ShoppingItem
+import com.souspantry.app.ui.plancook.MealHistorySession
 import com.souspantry.app.ui.plancook.MyRecipe
 import com.souspantry.app.ui.plancook.SavedRecipe
 import com.souspantry.app.ui.plancook.WeekMealEntry
@@ -89,6 +90,18 @@ interface ShoppingDao {
     suspend fun deleteAll()
 }
 
+@Dao
+interface MealHistoryDao {
+    @Query("SELECT * FROM meal_history_sessions ORDER BY createdAt DESC")
+    fun getAll(): Flow<List<MealHistorySession>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(session: MealHistorySession)
+
+    @Query("DELETE FROM meal_history_sessions")
+    suspend fun deleteAll()
+}
+
 // ── Repositories ────────────────────────────────────────────────────────────
 
 @Singleton
@@ -127,4 +140,11 @@ class ShoppingRepository @Inject constructor(private val dao: ShoppingDao) {
     suspend fun getChecked(): List<ShoppingItem>      = dao.getChecked()
     suspend fun exists(name: String): Boolean         = dao.countByName(name) > 0
     suspend fun deleteAll()                           = dao.deleteAll()
+}
+
+@Singleton
+class MealHistoryRepository @Inject constructor(private val dao: MealHistoryDao) {
+    val sessions: Flow<List<MealHistorySession>> = dao.getAll()
+    suspend fun insert(session: MealHistorySession) = dao.insert(session)
+    suspend fun clearAll()                          = dao.deleteAll()
 }

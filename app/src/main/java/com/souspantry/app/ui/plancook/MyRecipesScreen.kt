@@ -100,7 +100,7 @@ fun MyRecipesScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Cream)) {
+    Box(modifier = Modifier.fillMaxSize().background(Beige)) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
             Text(
@@ -197,7 +197,7 @@ fun MyRecipesScreen(
         if (state.toastVisible) {
             Surface(
                 modifier        = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
-                shape           = RoundedCornerShape(14.dp),
+                shape           = RoundedCornerShape(16.dp),
                 color           = Color(0xFFE5F4ED),
                 shadowElevation = 8.dp,
             ) {
@@ -240,7 +240,7 @@ fun MyRecipesScreen(
             onDismissRequest = { pendingDelete = null },
             confirmButton    = {
                 TextButton(onClick = { vm.remove(recipe.id); pendingDelete = null }) {
-                    Text("Remove", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
+                    Text("Remove", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton    = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } },
@@ -367,7 +367,7 @@ private fun MyRecipeCard(
     var menuOpen by remember { mutableStateOf(false) }
     Surface(
         modifier        = Modifier.fillMaxWidth(),
-        shape           = RoundedCornerShape(14.dp),
+        shape           = RoundedCornerShape(16.dp),
         color           = Color.White,
         shadowElevation = 1.dp,
     ) {
@@ -413,8 +413,8 @@ private fun MyRecipeCard(
                         onClick     = { menuOpen = false; onDuplicate() },
                     )
                     DropdownMenuItem(
-                        text        = { Text("Remove", color = Color(0xFFD32F2F)) },
-                        leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFD32F2F)) },
+                        text        = { Text("Remove", color = Color(0xFFB23A48)) },
+                        leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFB23A48)) },
                         onClick     = { menuOpen = false; onRemove() },
                     )
                 }
@@ -568,7 +568,7 @@ private fun RecipeViewBody(
     notes       : String,
 ) {
     // Basics card
-    Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(name.ifBlank { "Untitled recipe" }, color = Navy, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -581,7 +581,7 @@ private fun RecipeViewBody(
 
     if (ingredients.isNotEmpty()) {
         SectionLabel("Ingredients")
-        Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+        Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
             Column {
                 ingredients.forEachIndexed { idx, ing ->
                     Text(ing, color = Navy, fontSize = 15.sp, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp))
@@ -593,7 +593,7 @@ private fun RecipeViewBody(
 
     if (steps.isNotEmpty()) {
         SectionLabel("Cooking Instructions")
-        Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+        Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
             Column {
                 steps.forEachIndexed { idx, step ->
                     Row(
@@ -617,7 +617,7 @@ private fun RecipeViewBody(
 
     if (notes.isNotBlank()) {
         SectionLabel("Notes")
-        Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+        Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
             Text(notes, color = Navy, fontSize = 15.sp, modifier = Modifier.padding(14.dp))
         }
     }
@@ -639,7 +639,7 @@ private fun RecipeEditBody(
     notes       : String, onNotes      : (String) -> Unit,
 ) {
     // Basics card
-    Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             EditField("Recipe name", name, onName)
             HorizontalDivider(thickness = 0.5.dp, color = Slate.copy(alpha = 0.12f))
@@ -674,7 +674,7 @@ private fun RecipeEditBody(
 
     // Ingredients editor
     SectionLabel("Ingredients")
-    Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
         Column {
             ingredients.forEachIndexed { idx, _ ->
                 EditableListRow(
@@ -692,7 +692,7 @@ private fun RecipeEditBody(
 
     // Steps editor
     SectionLabel("Cooking Instructions")
-    Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
         Column {
             steps.forEachIndexed { idx, _ ->
                 EditableListRow(
@@ -710,7 +710,7 @@ private fun RecipeEditBody(
 
     // Notes
     SectionLabel("Notes")
-    Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
         EditField("Anything to remember…", notes, onNotes, modifier = Modifier.padding(4.dp))
     }
 }

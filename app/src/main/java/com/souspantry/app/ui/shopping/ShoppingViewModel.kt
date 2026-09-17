@@ -7,6 +7,7 @@ import com.souspantry.app.data.models.ShoppingItem
 import com.souspantry.app.data.repository.PantryRepository
 import com.souspantry.app.data.repository.ShoppingRepository
 import com.souspantry.app.services.ApiService
+import com.souspantry.app.services.DirectClaude
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,17 +35,26 @@ private data class ShoppingTransient(
 @HiltViewModel
 class ShoppingViewModel @Inject constructor(
     private val api      : ApiService,
+    private val claude   : DirectClaude,
     private val pantry   : PantryRepository,
     private val shopping : ShoppingRepository,
 ) : ViewModel() {
 
     private val _transient = MutableStateFlow(ShoppingTransient())
 
+    /**
+     * The screen buckets strictly on "essential"/"optional", but the AI returns
+     * display labels like "Essential" / "Nice to Have" — normalise here so both
+     * freshly generated items and any already-stored mislabelled rows render.
+     */
+    private fun normalizePriority(raw: String): String =
+        if (raw.trim().equals("essential", ignoreCase = true)) "essential" else "optional"
+
     val state: StateFlow<ShoppingState> = combine(
         shopping.items, pantry.items, _transient,
     ) { items, pantryItems, t ->
         ShoppingState(
-            items       = items,
+            items       = items.map { it.copy(priority = normalizePriority(it.priority)) },
             loading     = t.loading,
             error       = t.error,
             pantryEmpty = pantryItems.isEmpty(),
@@ -57,11 +67,16 @@ class ShoppingViewModel @Inject constructor(
         _transient.update { it.copy(loading = true, error = null) }
         val pantryItems = pantry.items.first()
 
-        val result = if (pantryItems.isEmpty()) {
-            runCatching { api.generateStaples(emptyMap()) }
-        } else {
-            val body = mapOf("pantryItems" to pantryItems.map { mapOf("name" to it.name) })
-            runCatching { api.generateShoppingList(body) }
+        // Debug builds carry the Anthropic key so this works without the local
+        // backend running; release builds fall through to the backend.
+        val result = when {
+            claude.enabled && pantryItems.isEmpty()  -> runCatching { claude.shoppingStaples() }
+            claude.enabled                            -> runCatching { claude.shoppingRestock(pantryItems) }
+            pantryItems.isEmpty()                     -> runCatching { api.generateStaples(emptyMap()) }
+            else -> {
+                val body = mapOf("pantryItems" to pantryItems.map { mapOf("name" to it.name) })
+                runCatching { api.generateShoppingList(body) }
+            }
         }
 
         result
@@ -71,7 +86,12 @@ class ShoppingViewModel @Inject constructor(
                 // (Gson doesn't apply the Kotlin default id when the field is absent).
                 val fresh = newItems
                     .filterNot { shopping.exists(it.name) }
-                    .map { it.copy(id = java.util.UUID.randomUUID().toString()) }
+                    .map {
+                        it.copy(
+                            id       = java.util.UUID.randomUUID().toString(),
+                            priority = normalizePriority(it.priority),
+                        )
+                    }
                 shopping.upsertAll(fresh)
                 _transient.update { it.copy(loading = false) }
             }

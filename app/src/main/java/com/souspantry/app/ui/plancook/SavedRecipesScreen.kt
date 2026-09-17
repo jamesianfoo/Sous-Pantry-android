@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.souspantry.app.services.RecipeImages
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,7 +39,7 @@ fun SavedRecipesScreen(vm: SavedRecipesViewModel = hiltViewModel()) {
     var detailRecipe  by remember { mutableStateOf<SavedRecipe?>(null) }
     var pendingDelete by remember { mutableStateOf<SavedRecipe?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize().background(Cream)) {
+    Box(modifier = Modifier.fillMaxSize().background(Beige)) {
         if (state.recipes.isEmpty()) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(40.dp),
@@ -87,14 +89,14 @@ fun SavedRecipesScreen(vm: SavedRecipesViewModel = hiltViewModel()) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Icon(Icons.Filled.Cancel, null, tint = Color(0xFFC73D2E), modifier = Modifier.size(44.dp))
+                    Icon(Icons.Filled.Cancel, null, tint = Color(0xFFB23A48), modifier = Modifier.size(44.dp))
                     Text("Remove Recipe?", color = Navy, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     Text("\"${recipe.title}\"", color = Slate, fontSize = 14.sp, textAlign = TextAlign.Center, maxLines = 2)
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick  = { vm.remove(recipe.id); pendingDelete = null },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
-                            colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFFC73D2E)),
+                            colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFFB23A48)),
                             shape    = RoundedCornerShape(12.dp),
                         ) { Text("Remove", color = Color.White, fontWeight = FontWeight.SemiBold) }
                         Button(
@@ -121,12 +123,21 @@ private fun SavedRecipeCard(
     Box {
         Surface(
             modifier        = Modifier.fillMaxWidth().clickable(onClick = onTap),
-            shape           = RoundedCornerShape(14.dp),
+            shape           = RoundedCornerShape(16.dp),
             color           = Color.White,
             shadowElevation = 3.dp,
         ) {
             Column {
-                // Image header — gradient + emoji base, loremflickr photo overlay
+                // Image header — gradient + emoji base, shared-pipeline photo overlay.
+                // Re-checks a few times so a just-generated accurate photo replaces
+                // the cuisine fallback without reopening (iOS: 5 tries × 4s).
+                val imageUrl by produceState<String?>(null, recipe.title, recipe.cuisine) {
+                    repeat(5) {
+                        value = RecipeImages.imageUrl(recipe.title, recipe.cuisine)
+                        if (RecipeImages.isWorkerUrl(value)) return@produceState
+                        delay(4_000)
+                    }
+                }
                 Box(modifier = Modifier.fillMaxWidth().height(120.dp)) {
                     Box(
                         modifier         = Modifier.fillMaxSize().background(Brush.linearGradient(gradientColors(recipe.cuisine))),
@@ -134,12 +145,14 @@ private fun SavedRecipeCard(
                     ) {
                         Text(cuisineEmoji(recipe.cuisine), fontSize = 40.sp)
                     }
-                    AsyncImage(
-                        model              = "https://loremflickr.com/320/240/${recipe.title.replace(" ", ",")},food",
-                        contentDescription = recipe.title,
-                        contentScale       = ContentScale.Crop,
-                        modifier           = Modifier.fillMaxSize(),
-                    )
+                    imageUrl?.let {
+                        AsyncImage(
+                            model              = it,
+                            contentDescription = recipe.title,
+                            contentScale       = ContentScale.Crop,
+                            modifier           = Modifier.fillMaxSize(),
+                        )
+                    }
                     // Cuisine badge bottom-left
                     Surface(
                         modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
@@ -189,7 +202,7 @@ private fun SavedRecipeDetailSheet(recipe: SavedRecipe, onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Header card
-            Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(recipe.cuisine.uppercase(), color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
@@ -211,7 +224,7 @@ private fun SavedRecipeDetailSheet(recipe: SavedRecipe, onDismiss: () -> Unit) {
             }
             if (recipe.ingredients.isNotEmpty()) {
                 Text("INGREDIENTS", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+                Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
                     Column {
                         recipe.ingredients.forEachIndexed { idx, ing ->
                             Text("• $ing", color = Navy, fontSize = 15.sp, modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp))
@@ -222,7 +235,7 @@ private fun SavedRecipeDetailSheet(recipe: SavedRecipe, onDismiss: () -> Unit) {
             }
             if (recipe.instructions.isNotEmpty()) {
                 Text("HOW TO COOK", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                Surface(shape = RoundedCornerShape(14.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+                Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
                     Column {
                         recipe.instructions.forEachIndexed { idx, step ->
                             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -248,7 +261,7 @@ private fun gradientColors(cuisine: String): List<Color> {
         c.contains("italian")                                                    -> listOf(Color(0xFF801A1A), Color(0xFFCC4D1A))
         c.contains("asian") || c.contains("japanese") || c.contains("korean") || c.contains("chinese")
                                                                                  -> listOf(Color(0xFF1A3366), Color(0xFF336699))
-        c.contains("indian") || c.contains("thai")                               -> listOf(Color(0xFF804D00), Color(0xFFCC8019))
+        c.contains("indian") || c.contains("thai")                               -> listOf(Color(0xFF804D00), Color(0xFFC4965A))
         c.contains("mexican")                                                    -> listOf(Color(0xFF661A00), Color(0xFFB34D00))
         c.contains("greek") || c.contains("mediterranean")                       -> listOf(Color(0xFF1A4D80), Color(0xFF3380B3))
         else                                                                     -> listOf(Color(0xFF162437), Color(0xFF225F22))
@@ -274,7 +287,7 @@ private fun cuisineEmoji(cuisine: String): String {
 
 private fun savedDifficultyColor(d: String): Color = when (d.lowercase()) {
     "easy"   -> Color(0xFF2D5A3D)
-    "medium" -> Color(0xFFCC8019)
-    "hard"   -> Color(0xFFC73D2E)
+    "medium" -> Color(0xFFC4965A)
+    "hard"   -> Color(0xFFB23A48)
     else     -> Color(0xFF647080)
 }

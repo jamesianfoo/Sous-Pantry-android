@@ -31,8 +31,13 @@ data class IdentifyResponse(
 
 data class ReceiptLineItem(
     val name    : String,
+    /** Pack size of ONE unit, e.g. "500g" — not how many were bought. */
     val quantity: String?,
     val category: String?,
+    /** How many units this line bought ("2 x 500g" → 2). Always ≥ 1. */
+    val count   : Int     = 1,
+    /** Unit price in the receipt's own currency, when shown. */
+    val price   : Double? = null,
 )
 
 data class SuggestedMeal(
@@ -40,11 +45,17 @@ data class SuggestedMeal(
     val description     : String,
     val cuisine         : String,
     val prepTime        : String,
+    val cookTime        : String       = "",
+    val servings        : Int          = 2,
     val difficulty      : String,
     val ingredients     : List<String>,
     val usedPantryItems : List<String>,
     val instructions    : List<String>,
     val imageQuery      : String,
+    /** External recipe page, when this card came from (or echoes) a real site. */
+    val sourceURL       : String       = "",
+    /** Bare domain of [sourceURL], e.g. "recipetineats.com". */
+    val sourceSite      : String       = "",
 )
 
 data class TrendingRecipe(
@@ -71,6 +82,9 @@ data class AdventurousRecipe(
     val matchPercent        : Int,
     val imageQuery          : String,
 )
+
+/** [ShoppingItem.reason] prefix for items added from a recipe ("For <recipe title>"). */
+const val RECIPE_REASON_PREFIX = "For "
 
 @Entity(tableName = "shopping_items")
 data class ShoppingItem(

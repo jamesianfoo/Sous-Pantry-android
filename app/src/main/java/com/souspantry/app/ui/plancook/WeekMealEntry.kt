@@ -31,6 +31,7 @@ fun weekMealEntryFrom(meal: SuggestedMeal, date: LocalDate) = WeekMealEntry(
     description   = meal.description,
     cuisine       = meal.cuisine,
     prepTime      = meal.prepTime,
+    cookTime      = meal.cookTime,
     difficulty    = meal.difficulty,
     ingredients   = meal.ingredients,
     instructions  = meal.instructions,

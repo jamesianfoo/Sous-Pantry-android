@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.souspantry.app.data.models.RECIPE_REASON_PREFIX
 import com.souspantry.app.data.models.ShoppingItem
 import com.souspantry.app.ui.theme.*
 
@@ -76,7 +77,7 @@ fun ShoppingScreen(vm: ShoppingViewModel = hiltViewModel()) {
     val duplicateOfSearch = if (trimmed.isEmpty()) null
                             else state.items.firstOrNull { it.name.trim().equals(trimmed, ignoreCase = true) }
 
-    Box(modifier = Modifier.fillMaxSize().background(Cream)) {
+    Box(modifier = Modifier.fillMaxSize().background(Beige)) {
         Column(modifier = Modifier.fillMaxSize()) {
 
             // ── Frozen header ───────────────────────────────────────
@@ -172,7 +173,7 @@ fun ShoppingScreen(vm: ShoppingViewModel = hiltViewModel()) {
             dismissButton    = {
                 TextButton(onClick = {
                     vm.clearChecked(); showBasketConfirm = false
-                }) { Text("Delete from List", color = Color(0xFFD32F2F)) }
+                }) { Text("Delete from List", color = Color(0xFFB23A48)) }
             },
             title          = { Text("${checked.size} item${if (checked.size == 1) "" else "s"} in your basket") },
             text           = { Text("Move them to your pantry, or remove them from your shopping list?") },
@@ -184,7 +185,7 @@ fun ShoppingScreen(vm: ShoppingViewModel = hiltViewModel()) {
             onDismissRequest = { pendingDelete = null },
             confirmButton    = {
                 TextButton(onClick = { vm.delete(item); pendingDelete = null }) {
-                    Text("Delete", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
+                    Text("Delete", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton    = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } },
@@ -463,11 +464,11 @@ private fun ShoppingSection(
         Surface(
             modifier = Modifier.fillMaxWidth().shadow(
                 elevation     = 6.dp,
-                shape         = RoundedCornerShape(14.dp),
+                shape         = RoundedCornerShape(16.dp),
                 ambientColor  = Navy.copy(alpha = 0.06f),
                 spotColor     = Navy.copy(alpha = 0.06f),
             ),
-            shape    = RoundedCornerShape(14.dp),
+            shape    = RoundedCornerShape(16.dp),
             color    = Color.White,
         ) {
             Column {
@@ -524,6 +525,11 @@ private fun ShoppingRowView(
             item.quantity?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = Slate)
             }
+            // Items added from a recipe say which one, so they're identifiable
+            // among everything else on the list.
+            item.reason?.takeIf { it.startsWith(RECIPE_REASON_PREFIX) }?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = Green, maxLines = 1)
+            }
         }
         // Sparkles indicator for AI-generated items (reason is non-null when AI provided context)
         if (item.reason != null) {
@@ -559,7 +565,7 @@ private fun RowMenu(onEdit: () -> Unit, onDelete: () -> Unit) {
             )
             DropdownMenuItem(
                 text        = { Text("Delete") },
-                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFD32F2F)) },
+                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFB23A48)) },
                 onClick     = { open = false; onDelete() },
             )
         }
@@ -673,9 +679,9 @@ private fun GradientButton(
     Surface(
         modifier        = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(enabled = !loading, onClick = onClick),
-        shape           = RoundedCornerShape(14.dp),
+        shape           = RoundedCornerShape(16.dp),
         color           = Color.Transparent,
     ) {
         Box(
