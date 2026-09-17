@@ -49,7 +49,7 @@ fun AccountScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    Column(modifier = Modifier.fillMaxSize().background(Cream)) {
+    Column(modifier = Modifier.fillMaxSize().background(Beige)) {
 
         // ── Header ──────────────────────────────────────────────
         Column(
@@ -132,6 +132,22 @@ fun AccountScreen(
                                     checkedTrackColor = Color(0xFFE65100),
                                 ),
                             )
+                        }
+                        Divider()
+                        Row(
+                            modifier          = Modifier.fillMaxWidth()
+                                .clickable { vm.resetFunnel() }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Debug: Replay onboarding funnel", color = Color(0xFFE65100), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Resets sp_hasCompletedFunnel — kill and reopen the app to start the funnel.",
+                                    color    = Slate,
+                                    fontSize = 11.sp,
+                                )
+                            }
                         }
                     }
                 }
@@ -235,6 +251,8 @@ fun AccountScreen(
             SectionLabel("CUSTOMISATION")
             SectionCard {
                 Column {
+                    MealMoodsEditor(moods = state.moods, onToggle = { vm.toggleMood(it) })
+                    Divider()
                     ToggleRow("Recommended substitutions", state.recommendedSubs) { vm.setRecommendedSubs(it) }
                     Divider()
                     ToggleRow("Sous Pantry suggestions", state.sousAIEnabled) { vm.setSousAIEnabled(it) }
@@ -313,16 +331,13 @@ fun AccountScreen(
 
     if (showDietaryEditor) {
         DietaryEditorSheet(
-            initialTypes        = state.dietaryTypes,
-            initialRestrictions = state.foodRestrictions,
-            initialAvoid        = state.avoidIngredients,
-            onDismiss           = { showDietaryEditor = false },
-            onSave              = { types, restrictions, avoid ->
-                vm.setDietaryTypes(types)
-                vm.setFoodRestrictions(restrictions)
-                vm.setAvoidIngredients(avoid)
-                showDietaryEditor = false
-            },
+            types                = state.dietaryTypes,
+            restrictions         = state.foodRestrictions,
+            avoid                = state.avoidIngredients,
+            onTypesChange        = { vm.setDietaryTypes(it) },
+            onRestrictionsChange = { vm.setFoodRestrictions(it) },
+            onAvoidChange        = { vm.setAvoidIngredients(it) },
+            onDismiss            = { showDietaryEditor = false },
         )
     }
     if (showLogoutConfirm) {
@@ -330,7 +345,7 @@ fun AccountScreen(
             onDismissRequest = { showLogoutConfirm = false },
             confirmButton    = {
                 TextButton(onClick = { showLogoutConfirm = false; vm.logOut(onComplete = onLoggedOut) }) {
-                    Text("Log Out", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
+                    Text("Log Out", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton    = { TextButton(onClick = { showLogoutConfirm = false }) { Text("Cancel") } },
@@ -344,7 +359,7 @@ fun AccountScreen(
             onDismissRequest = { showDeleteConfirm = false },
             confirmButton    = {
                 TextButton(onClick = { showDeleteConfirm = false; vm.deleteAccount(onComplete = onAccountDeleted) }) {
-                    Text("Delete", color = Color(0xFFD32F2F), fontWeight = FontWeight.SemiBold)
+                    Text("Delete", color = Color(0xFFB23A48), fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton    = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } },
@@ -373,11 +388,11 @@ private fun SectionCard(content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth().shadow(
             elevation    = 6.dp,
-            shape        = RoundedCornerShape(14.dp),
+            shape        = RoundedCornerShape(16.dp),
             ambientColor = Navy.copy(alpha = 0.06f),
             spotColor    = Navy.copy(alpha = 0.06f),
         ),
-        shape   = RoundedCornerShape(14.dp),
+        shape   = RoundedCornerShape(16.dp),
         color   = Color.White,
     ) {
         content()
@@ -579,9 +594,9 @@ private fun DestructiveActionRow(
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = Color(0xFFD32F2F))
+        Icon(icon, null, tint = Color(0xFFB23A48))
         Spacer(Modifier.width(12.dp))
-        Text(label, color = Color(0xFFD32F2F), fontWeight = FontWeight.Medium)
+        Text(label, color = Color(0xFFB23A48), fontWeight = FontWeight.Medium)
     }
 }
 
@@ -604,153 +619,3 @@ private fun dietarySummary(types: Set<String>, restrictions: Set<String>, avoid:
     }
 }
 
-// ── Dietary editor sheet ─────────────────────────────────────────────────────
-
-private val DIETARY_TYPES = listOf(
-    "vegetarian"   to "Vegetarian",
-    "vegan"        to "Vegan",
-    "pescatarian"  to "Pescatarian",
-    "keto"         to "Keto",
-    "paleo"        to "Paleo",
-    "mediterranean" to "Mediterranean",
-)
-
-private val FOOD_RESTRICTIONS = listOf(
-    "gluten_free"     to "Gluten-Free",
-    "nut_free"        to "Nut-Free",
-    "dairy_free"      to "Dairy-Free",
-    "shellfish_free"  to "Shellfish-Free",
-    "egg_free"        to "Egg-Free",
-    "soy_free"        to "Soy-Free",
-    "pregnancy"       to "Pregnancy-Safe",
-)
-
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun DietaryEditorSheet(
-    initialTypes        : Set<String>,
-    initialRestrictions : Set<String>,
-    initialAvoid        : Set<String>,
-    onDismiss           : () -> Unit,
-    onSave              : (Set<String>, Set<String>, Set<String>) -> Unit,
-) {
-    val types        = remember { mutableStateListOf<String>().apply { addAll(initialTypes) } }
-    val restrictions = remember { mutableStateListOf<String>().apply { addAll(initialRestrictions) } }
-    val avoidList    = remember { mutableStateListOf<String>().apply { addAll(initialAvoid) } }
-    var avoidInput   by remember { mutableStateOf("") }
-
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Cream) {
-        Column(
-            modifier            = Modifier
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            Text(
-                "Dietary Preferences",
-                style      = MaterialTheme.typography.headlineMedium,
-                color      = Navy,
-                fontWeight = FontWeight.SemiBold,
-            )
-
-            Text("DIETARY TYPE", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            FlowChipGroup(
-                options   = DIETARY_TYPES,
-                selected  = types,
-                onToggle  = { v -> if (types.contains(v)) types.remove(v) else types.add(v) },
-            )
-
-            Text("RESTRICTIONS", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            FlowChipGroup(
-                options   = FOOD_RESTRICTIONS,
-                selected  = restrictions,
-                onToggle  = { v -> if (restrictions.contains(v)) restrictions.remove(v) else restrictions.add(v) },
-            )
-
-            Text("AVOID INGREDIENTS", color = Slate, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value         = avoidInput,
-                    onValueChange = { avoidInput = it },
-                    placeholder   = { Text("e.g. peanuts") },
-                    singleLine    = true,
-                    modifier      = Modifier.weight(1f),
-                )
-                Button(
-                    onClick = {
-                        val v = avoidInput.trim()
-                        if (v.isNotBlank() && !avoidList.any { it.equals(v, ignoreCase = true) }) {
-                            avoidList.add(v); avoidInput = ""
-                        }
-                    },
-                    colors  = ButtonDefaults.buttonColors(containerColor = Green),
-                    enabled = avoidInput.isNotBlank(),
-                ) { Text("Add") }
-            }
-            if (avoidList.isNotEmpty()) {
-                androidx.compose.foundation.layout.FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement   = Arrangement.spacedBy(8.dp),
-                ) {
-                    avoidList.toList().forEach { item ->
-                        Surface(
-                            shape    = RoundedCornerShape(16.dp),
-                            color    = Color.White,
-                            border   = BorderStroke(1.dp, Slate.copy(alpha = 0.3f)),
-                            modifier = Modifier.clickable { avoidList.remove(item) },
-                        ) {
-                            Row(
-                                modifier          = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(item, color = Navy, fontSize = 13.sp)
-                                Spacer(Modifier.width(6.dp))
-                                Text("×", color = Slate, fontSize = 14.sp)
-                            }
-                        }
-                    }
-                }
-            }
-
-            Button(
-                onClick  = { onSave(types.toSet(), restrictions.toSet(), avoidList.toSet()) },
-                modifier = Modifier.fillMaxWidth(),
-                colors   = ButtonDefaults.buttonColors(containerColor = Green),
-            ) {
-                Text("Save Preferences")
-            }
-        }
-    }
-}
-
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun FlowChipGroup(
-    options  : List<Pair<String, String>>,
-    selected : List<String>,
-    onToggle : (String) -> Unit,
-) {
-    androidx.compose.foundation.layout.FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement   = Arrangement.spacedBy(8.dp),
-    ) {
-        options.forEach { (value, label) ->
-            val on = selected.contains(value)
-            Surface(
-                shape    = RoundedCornerShape(16.dp),
-                color    = if (on) Green else Color.White,
-                border   = BorderStroke(1.dp, if (on) Color.Transparent else Slate.copy(alpha = 0.3f)),
-                modifier = Modifier.clickable { onToggle(value) },
-            ) {
-                Text(
-                    label,
-                    color      = if (on) Color.White else Navy,
-                    fontSize   = 13.sp,
-                    fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
-                    modifier   = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        }
-    }
-}

@@ -82,6 +82,7 @@ class SetupWizardViewModel @Inject constructor(
         }
 
         prefs.setOnboardingDone()
+        prefs.setSetupWizardDone()
         onDone()
     }
 }

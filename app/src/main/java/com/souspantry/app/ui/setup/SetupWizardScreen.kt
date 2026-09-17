@@ -78,7 +78,7 @@ fun SetupWizardScreen(
 ) {
     val state by vm.state.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize().background(Cream)) {
+    Column(modifier = Modifier.fillMaxSize().background(Beige)) {
         // ── Top bar (navy, progress dots) ───────────────────────────────
         Column(
             modifier            = Modifier.fillMaxWidth().background(Navy).padding(top = 48.dp, bottom = 20.dp),
@@ -140,8 +140,8 @@ fun SetupWizardScreen(
             ) {
                 if (state.step > 0) {
                     Surface(
-                        modifier = Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable { vm.back() },
-                        shape    = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).clickable { vm.back() },
+                        shape    = RoundedCornerShape(16.dp),
                         color    = SoftMint,
                     ) {
                         Row(
@@ -159,11 +159,11 @@ fun SetupWizardScreen(
                 Surface(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .clickable(enabled = state.canContinue && !state.finishing) {
                             if (isLast) vm.finish(onComplete) else vm.next()
                         },
-                    shape    = RoundedCornerShape(14.dp),
+                    shape    = RoundedCornerShape(16.dp),
                     color    = if (state.canContinue) Green else Slate.copy(alpha = 0.3f),
                 ) {
                     Row(

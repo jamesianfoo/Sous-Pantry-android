@@ -98,7 +98,7 @@ fun OnboardingScreen(
 
     HorizontalPager(
         state    = pagerState,
-        modifier = Modifier.fillMaxSize().background(Cream),
+        modifier = Modifier.fillMaxSize().background(Beige),
     ) { page ->
         when (page) {
             in 0..5 -> FeatureScreen(
@@ -202,7 +202,7 @@ private fun WizardScreen(
     onCta      : () -> Unit,
     onSkip     : () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize().background(Cream)) {
+    Column(modifier = Modifier.fillMaxSize().background(Beige)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -243,7 +243,7 @@ private fun WizardScreen(
 
 @Composable
 private fun ProScreen(onStartTrial: () -> Unit, onContinueFree: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().background(Cream).padding(horizontal = 24.dp)) {
+    Column(modifier = Modifier.fillMaxSize().background(Beige).padding(horizontal = 24.dp)) {
         Spacer(Modifier.weight(1f))
         Box(
             modifier = Modifier
@@ -312,7 +312,7 @@ private fun CtaButton(label: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(54.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(Brush.linearGradient(listOf(Green, Color(0xFF6B7A40))))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -324,8 +324,8 @@ private fun CtaButton(label: String, onClick: () -> Unit) {
 @Composable
 private fun WizardOptionCard(opt: Opt, isSelected: Boolean, onTap: () -> Unit) {
     Surface(
-        modifier        = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(onClick = onTap),
-        shape           = RoundedCornerShape(14.dp),
+        modifier        = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(onClick = onTap),
+        shape           = RoundedCornerShape(16.dp),
         color           = Color.White,
         border          = BorderStroke(if (isSelected) 1.5.dp else 1.dp, if (isSelected) Green else Navy.copy(alpha = 0.08f)),
         shadowElevation = if (isSelected) 6.dp else 2.dp,

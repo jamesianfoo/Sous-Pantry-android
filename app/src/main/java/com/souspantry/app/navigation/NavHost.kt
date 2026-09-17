@@ -1,5 +1,6 @@
 package com.souspantry.app.navigation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,7 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Kitchen
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -40,17 +41,19 @@ import com.souspantry.app.ui.plancook.PlanCookScreen
 import com.souspantry.app.ui.account.AccountScreen
 import com.souspantry.app.ui.auth.AuthScreen
 import com.souspantry.app.ui.founder.FounderNoteScreen
+import com.souspantry.app.ui.funnel.FunnelScreen
 import com.souspantry.app.ui.paywall.PaywallScreen
 import com.souspantry.app.ui.setup.SetupWizardScreen
 import com.souspantry.app.ui.shopping.ShoppingScreen
 import com.souspantry.app.ui.theme.Green
 import com.souspantry.app.ui.theme.Navy
+import com.souspantry.app.ui.theme.SoftMint
 import com.souspantry.app.ui.theme.White
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector? = null) {
     data object Home      : Screen("home",      "Home",        Icons.Filled.Home)
     data object Pantry    : Screen("pantry",    "Pantry",      Icons.Filled.Kitchen)
-    data object PlanCook  : Screen("plancook",  "Plan & Cook", Icons.Filled.MenuBook)
+    data object PlanCook  : Screen("plancook",  "Plan & Cook", Icons.Filled.Restaurant)
     data object Shopping  : Screen("shopping",  "Shopping",    Icons.Filled.ShoppingCart)
     data object Account   : Screen("account",   "Account",     Icons.Filled.AccountCircle)
     data object Barcode   : Screen("barcode",   "Scan Barcode")
@@ -58,6 +61,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
     data object EReceipt  : Screen("ereceipt",  "eReceipt Sync")
     data object Onboarding: Screen("onboarding","Onboarding")
     data object SetupWizard: Screen("setupwizard","Setup")
+    data object Funnel     : Screen("funnel",    "Get Started")
     data object FounderNote: Screen("foundernote","Note")
     data object Auth      : Screen("auth",      "Sign In")
     data object Paywall   : Screen("paywall",   "Premium")
@@ -78,9 +82,11 @@ fun SousPantryNavHost() {
     when (val g = gate) {
         AppGate.Loading   -> SplashScreen()
         is AppGate.Ready  -> SousPantryAppScaffold(
+            // Mirrors iOS Sous_PantryApp: auth → onboarding → funnel → note → app.
             startDest      = when {
                 !g.signedIn        -> Screen.Auth.route
                 !g.onboardingDone  -> Screen.Onboarding.route
+                !g.funnelDone      -> Screen.Funnel.route
                 !g.founderNoteSeen -> Screen.FounderNote.route
                 else               -> Screen.Home.route
             },
@@ -121,12 +127,23 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
                                 }
                             },
                             icon   = { Icon(screen.icon!!, screen.label) },
-                            label  = { Text(screen.label) },
+                            // Nav labels inherit the tracked section-label style; reset the
+                            // tracking and keep one centred line.
+                            label  = {
+                                Text(
+                                    screen.label,
+                                    letterSpacing = 0.sp,
+                                    textAlign     = androidx.compose.ui.text.style.TextAlign.Center,
+                                    maxLines      = 1,
+                                    softWrap      = false,
+                                )
+                            },
+                            // DS: selected = Forest on Soft-Mint pill; unselected = Navy.
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor   = Green, selectedTextColor   = Green,
-                                unselectedIconColor = Green.copy(alpha = 0.45f),
-                                unselectedTextColor = Green.copy(alpha = 0.45f),
-                                indicatorColor      = White,
+                                unselectedIconColor = Navy.copy(alpha = 0.65f),
+                                unselectedTextColor = Navy.copy(alpha = 0.65f),
+                                indicatorColor      = SoftMint,
                             )
                         )
                     }
@@ -189,9 +206,8 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
             }
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(onComplete = {
-                    // Onboarding done → founder note (first run) or straight Home.
-                    val dest = if (founderNoteSeen) Screen.Home.route else Screen.FounderNote.route
-                    navController.navigate(dest) {
+                    // Onboarding done → funnel (mirrors iOS ordering).
+                    navController.navigate(Screen.Funnel.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
                 })
@@ -211,6 +227,15 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
                     val dest = if (founderNoteSeen) Screen.Home.route else Screen.FounderNote.route
                     navController.navigate(dest) {
                         popUpTo(Screen.SetupWizard.route) { inclusive = true }
+                    }
+                })
+            }
+            composable(Screen.Funnel.route) {
+                FunnelScreen(onComplete = {
+                    // Funnel done (paywall hand-off) → founder note or straight Home.
+                    val dest = if (founderNoteSeen) Screen.Home.route else Screen.FounderNote.route
+                    navController.navigate(dest) {
+                        popUpTo(Screen.Funnel.route) { inclusive = true }
                     }
                 })
             }

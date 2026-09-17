@@ -34,6 +34,7 @@ data class AccountState(
     val deviceId            : String      = "",
     val isPremium           : Boolean     = false, // TODO: wire to BillingManager (Task 8)
     val forcePremium        : Boolean     = false, // Debug-only override
+    val moods               : Set<String> = emptySet(), // Meal moods (shared with onboarding funnel)
 )
 
 @HiltViewModel
@@ -58,9 +59,13 @@ class AccountViewModel @Inject constructor(
         prefs.measurementSystem, prefs.temperatureUnit,
     ) { measurement, temperature -> measurement to temperature }
 
+    private data class DietState(
+        val types: Set<String>, val restrictions: Set<String>, val avoid: Set<String>, val moods: Set<String>,
+    )
+
     private val dietState = combine(
-        prefs.dietaryTypes, prefs.foodRestrictions, prefs.avoidIngredients,
-    ) { types, restrictions, ingredients -> Triple(types, restrictions, ingredients) }
+        prefs.dietaryTypes, prefs.foodRestrictions, prefs.avoidIngredients, prefs.funnelMoods,
+    ) { types, restrictions, ingredients, moods -> DietState(types, restrictions, ingredients, moods) }
 
     private val notifState = combine(
         prefs.alertExpiring, prefs.alertReceipt, prefs.alertPantryStale,
@@ -80,9 +85,10 @@ class AccountViewModel @Inject constructor(
         identity.copy(
             measurementSystem = units.first,
             temperatureUnit   = units.second,
-            dietaryTypes      = diet.first,
-            foodRestrictions  = diet.second,
-            avoidIngredients  = diet.third,
+            dietaryTypes      = diet.types,
+            foodRestrictions  = diet.restrictions,
+            avoidIngredients  = diet.avoid,
+            moods             = diet.moods,
             alertExpiring     = notif.first,
             alertReceipt      = notif.second,
             alertPantryStale  = notif.third,
@@ -110,6 +116,18 @@ class AccountViewModel @Inject constructor(
     fun setRecommendedSubs(on: Boolean)    = viewModelScope.launch { prefs.setRecommendedSubs(on) }
     fun setSousAIEnabled(on: Boolean)      = viewModelScope.launch { prefs.setSousAIEnabled(on) }
     fun setForcePremium(on: Boolean)       = viewModelScope.launch { prefs.setForcePremium(on) }
+    fun resetFunnel()                      = viewModelScope.launch { prefs.resetFunnel() }
+
+    /** Instant toggle, hard cap 3 — selecting a 4th mood is a no-op (mirrors iOS). */
+    fun toggleMood(id: String) = viewModelScope.launch {
+        val cur = state.value.moods
+        val next = when {
+            id in cur      -> cur - id
+            cur.size >= 3  -> return@launch
+            else           -> cur + id
+        }
+        prefs.setFunnelSet(UserPreferencesRepository.KEY_FUNNEL_MOODS, next)
+    }
 
     // ── Account actions ─────────────────────────────────────────────────────
 

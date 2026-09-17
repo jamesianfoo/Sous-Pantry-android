@@ -11,6 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,12 +22,43 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    init {
+        // Keep RegionHolder in sync so the X-SP-Region interceptor has a
+        // synchronous value from app start onward. Reads the key directly —
+        // must not touch class properties here (constructor race).
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            context.dataStore.data.map { it[KEY_FUNNEL_REGION] ?: "" }
+                .collect { com.souspantry.app.services.RegionHolder.code = it }
+        }
+    }
+
     companion object {
         // Identity
         val KEY_DEVICE_ID        = stringPreferencesKey("device_id")
         val KEY_USER_NAME        = stringPreferencesKey("user_name")
         val KEY_USER_EMAIL       = stringPreferencesKey("user_email")
         val KEY_ONBOARDING_DONE  = booleanPreferencesKey("onboarding_done")
+        val KEY_SETUP_WIZARD_DONE = booleanPreferencesKey("setup_wizard_done")
+
+        // Onboarding funnel (exact mirror of iOS; completion key name matches iOS)
+        val KEY_FUNNEL_DONE       = booleanPreferencesKey("sp_hasCompletedFunnel")
+        val KEY_FUNNEL_GOAL       = stringPreferencesKey("funnel_goal")
+        val KEY_FUNNEL_BARRIER    = stringPreferencesKey("funnel_barrier")
+        val KEY_FUNNEL_SAVE_MORE  = stringPreferencesKey("funnel_save_more")
+        val KEY_FUNNEL_AGE        = stringPreferencesKey("funnel_age")
+        val KEY_FUNNEL_REGION     = stringPreferencesKey("funnel_region")
+        val KEY_FUNNEL_CURRENCY   = stringPreferencesKey("funnel_currency")
+        val KEY_FUNNEL_COUNTRY    = stringPreferencesKey("funnel_other_country")
+        val KEY_FUNNEL_ALLERGIES  = stringSetPreferencesKey("funnel_allergies")
+        val KEY_FUNNEL_PROTEINS   = stringSetPreferencesKey("funnel_proteins")
+        val KEY_FUNNEL_MOODS      = stringSetPreferencesKey("funnel_moods")
+        val KEY_FUNNEL_COOK_TIME  = stringPreferencesKey("funnel_cook_time")
+        val KEY_FUNNEL_DAYS       = stringSetPreferencesKey("funnel_days")
+        val KEY_FUNNEL_BUDGET     = intPreferencesKey("funnel_budget")
+        val KEY_FUNNEL_SHOPS      = stringSetPreferencesKey("funnel_shops")
+        val KEY_FUNNEL_APPLIANCES = stringSetPreferencesKey("funnel_appliances")
+        val KEY_FUNNEL_REFERRAL   = stringPreferencesKey("funnel_referral")
+        val KEY_TRIAL_REMINDER    = stringPreferencesKey("funnel_trial_reminder") // "1_day" | "2_days"
         val KEY_FOUNDER_NOTE_SEEN = booleanPreferencesKey("founder_note_seen")
 
         // Notifications (global + per-category)
@@ -79,6 +111,13 @@ class UserPreferencesRepository @Inject constructor(
     val userName: Flow<String>         = context.dataStore.data.map { it[KEY_USER_NAME]        ?: "" }
     val userEmail: Flow<String>        = context.dataStore.data.map { it[KEY_USER_EMAIL]       ?: "" }
     val onboardingDone: Flow<Boolean>  = context.dataStore.data.map { it[KEY_ONBOARDING_DONE]  ?: false }
+    val setupWizardDone: Flow<Boolean> = context.dataStore.data.map { it[KEY_SETUP_WIZARD_DONE] ?: false }
+    val funnelDone: Flow<Boolean>      = context.dataStore.data.map { it[KEY_FUNNEL_DONE] ?: false }
+    /** Whether the funnel flag has EVER been written — drives the grandfather rule. */
+    val funnelDoneWritten: Flow<Boolean> = context.dataStore.data.map { it.contains(KEY_FUNNEL_DONE) }
+    val funnelRegion: Flow<String>     = context.dataStore.data.map { it[KEY_FUNNEL_REGION] ?: "" }
+    val funnelMoods: Flow<Set<String>> = context.dataStore.data.map { it[KEY_FUNNEL_MOODS] ?: emptySet() }
+    val funnelShops: Flow<Set<String>> = context.dataStore.data.map { it[KEY_FUNNEL_SHOPS] ?: emptySet() }
     val founderNoteSeen: Flow<Boolean> = context.dataStore.data.map { it[KEY_FOUNDER_NOTE_SEEN] ?: false }
 
     val notifEnabled: Flow<Boolean>      = context.dataStore.data.map { it[KEY_NOTIF_ENABLED]      ?: true }
@@ -114,6 +153,15 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setUserName(name: String)             = context.dataStore.edit { it[KEY_USER_NAME]  = name }
     suspend fun setUserEmail(email: String)           = context.dataStore.edit { it[KEY_USER_EMAIL] = email }
     suspend fun setOnboardingDone()                   = context.dataStore.edit { it[KEY_ONBOARDING_DONE] = true }
+    suspend fun setSetupWizardDone()                  = context.dataStore.edit { it[KEY_SETUP_WIZARD_DONE] = true }
+    suspend fun setFunnelDone()                       = context.dataStore.edit { it[KEY_FUNNEL_DONE] = true }
+    /** Debug: replay the funnel. Writes an explicit false — removing the key would re-trigger the grandfather rule. */
+    suspend fun resetFunnel()                         = context.dataStore.edit { it[KEY_FUNNEL_DONE] = false }
+
+    // Generic funnel-answer writes — one setter per value shape, keys public above.
+    suspend fun setFunnelString(key: Preferences.Key<String>, value: String)         = context.dataStore.edit { it[key] = value }
+    suspend fun setFunnelSet(key: Preferences.Key<Set<String>>, value: Set<String>)  = context.dataStore.edit { it[key] = value }
+    suspend fun setFunnelInt(key: Preferences.Key<Int>, value: Int)                  = context.dataStore.edit { it[key] = value }
     suspend fun setFounderNoteSeen()                  = context.dataStore.edit { it[KEY_FOUNDER_NOTE_SEEN] = true }
 
     suspend fun setNotifEnabled(on: Boolean)          = context.dataStore.edit { it[KEY_NOTIF_ENABLED]      = on }

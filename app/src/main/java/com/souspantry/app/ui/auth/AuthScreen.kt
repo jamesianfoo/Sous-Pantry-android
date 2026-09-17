@@ -153,9 +153,9 @@ private fun AuthButton(
     Surface(
         modifier        = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(enabled = enabled && !loading, onClick = onClick),
-        shape           = RoundedCornerShape(14.dp),
+        shape           = RoundedCornerShape(16.dp),
         color           = background,
         shadowElevation = if (background == Color.White) 6.dp else 0.dp,
     ) {

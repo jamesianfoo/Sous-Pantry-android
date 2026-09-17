@@ -49,6 +49,7 @@ private val BENEFITS = listOf(
 fun PaywallScreen(
     onPurchased : () -> Unit,
     onDismiss   : () -> Unit,
+    showClose   : Boolean = true,   // false during the onboarding funnel: hard paywall
     vm          : PaywallViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsState()
@@ -88,7 +89,7 @@ fun PaywallScreen(
                     Spacer(Modifier.height(6.dp))
                     Text("7-day free trial included.", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
                 }
-                Box(
+                if (showClose) Box(
                     modifier = Modifier
                         .size(30.dp)
                         .clip(CircleShape)
@@ -150,9 +151,9 @@ fun PaywallScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .clickable(enabled = plan != null && !state.processing) { vm.purchase(onPurchased) },
-                shape    = RoundedCornerShape(14.dp),
+                shape    = RoundedCornerShape(16.dp),
                 color    = Color.Transparent,
             ) {
                 Box(
@@ -202,7 +203,7 @@ fun PaywallScreen(
 
             // Maybe Later + Restore
             Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                Text(
+                if (showClose) Text(
                     "Maybe Later",
                     color    = Color.White.copy(alpha = 0.85f),
                     fontSize = 14.sp,
