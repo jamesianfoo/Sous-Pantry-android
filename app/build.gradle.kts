@@ -41,6 +41,11 @@ android {
         // their cuisine gradient until the accurate Worker image exists.
         val unsplashKey = localProps.getProperty("UNSPLASH_ACCESS_KEY") ?: ""
         buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"$unsplashKey\"")
+
+        // Google Cloud OAuth *Web* client ID for Google Sign-In (Credential Manager).
+        // The app's signing SHA-1 must also be registered as an Android client.
+        val googleClientId = localProps.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleClientId\"")
     }
 
     buildTypes {
@@ -97,6 +102,9 @@ dependencies {
 
     // Coil (image loading)
     implementation(libs.coil.compose)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play)
+    implementation(libs.googleid)
 
     // ML Kit (barcode + text recognition)
     implementation(libs.mlkit.barcode)

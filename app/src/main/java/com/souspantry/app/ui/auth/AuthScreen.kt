@@ -5,9 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,8 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,8 +28,8 @@ fun AuthScreen(
     onSignedIn : () -> Unit,
     vm         : AuthViewModel = hiltViewModel(),
 ) {
-    val state by vm.state.collectAsState()
-    val anyLoading = state.loadingGoogle || state.loadingEmail
+    val state   by vm.state.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Box(
         modifier = Modifier
@@ -82,44 +77,22 @@ fun AuthScreen(
             )
             Spacer(Modifier.height(18.dp))
 
-            if (!state.emailMode) {
-                // Continue with Google (white button + brand G)
-                AuthButton(
-                    background = Color.White,
-                    loading    = state.loadingGoogle,
-                    enabled    = !anyLoading,
-                    onClick    = { vm.continueWithGoogle(onSignedIn) },
-                ) {
-                    Image(
-                        painter            = painterResource(R.drawable.ic_google_g),
-                        contentDescription = null,
-                        modifier           = Modifier.size(22.dp),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        if (state.loadingGoogle) "Signing in…" else "Continue with Google",
-                        color      = Color.Black.copy(alpha = 0.75f),
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // Continue with Email (outlined)
-                AuthButton(
-                    background = Color.White.copy(alpha = 0.10f),
-                    enabled    = !anyLoading,
-                    onClick    = { vm.toggleEmailMode() },
-                ) {
-                    Icon(Icons.Filled.Email, null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text("Continue with Email", color = Color.White, fontWeight = FontWeight.SemiBold)
-                }
-            } else {
-                EmailForm(
-                    loading = state.loadingEmail,
-                    onBack  = { vm.toggleEmailMode() },
-                    onSubmit = { email, pw -> vm.continueWithEmail(email, pw, onSignedIn) },
+            AuthButton(
+                background = Color.White,
+                loading    = state.loadingGoogle,
+                enabled    = !state.loadingGoogle,
+                onClick    = { vm.continueWithGoogle(context, onSignedIn) },
+            ) {
+                Image(
+                    painter            = painterResource(R.drawable.ic_google_g),
+                    contentDescription = null,
+                    modifier           = Modifier.size(22.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    if (state.loadingGoogle) "Signing in…" else "Continue with Google",
+                    color      = Color.Black.copy(alpha = 0.75f),
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
 
@@ -177,62 +150,4 @@ private fun AuthButton(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EmailForm(
-    loading  : Boolean,
-    onBack   : () -> Unit,
-    onSubmit : (email: String, password: String) -> Unit,
-) {
-    var email    by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedTextField(
-            value           = email,
-            onValueChange   = { email = it },
-            placeholder     = { Text("Email", color = Color.White.copy(alpha = 0.5f)) },
-            singleLine      = true,
-            modifier        = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            colors          = authFieldColors(),
-        )
-        OutlinedTextField(
-            value                = password,
-            onValueChange        = { password = it },
-            placeholder          = { Text("Password", color = Color.White.copy(alpha = 0.5f)) },
-            singleLine           = true,
-            visualTransformation = PasswordVisualTransformation(),
-            modifier             = Modifier.fillMaxWidth(),
-            keyboardOptions      = KeyboardOptions(keyboardType = KeyboardType.Password),
-            colors               = authFieldColors(),
-        )
-        AuthButton(
-            background = Color.White,
-            loading    = loading,
-            enabled    = !loading,
-            onClick    = { onSubmit(email, password) },
-        ) {
-            Text(
-                if (loading) "Signing in…" else "Sign In / Sign Up",
-                color      = Navy,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-        TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text("← Back", color = Color.White.copy(alpha = 0.7f))
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun authFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor       = Color.White,
-    unfocusedTextColor     = Color.White,
-    focusedBorderColor     = Color.White.copy(alpha = 0.6f),
-    unfocusedBorderColor   = Color.White.copy(alpha = 0.25f),
-    cursorColor            = Color.White,
-    focusedContainerColor  = Color.White.copy(alpha = 0.08f),
-    unfocusedContainerColor = Color.White.copy(alpha = 0.08f),
-)
+@OptIn(ExperimentalMaterial3Api::class)w

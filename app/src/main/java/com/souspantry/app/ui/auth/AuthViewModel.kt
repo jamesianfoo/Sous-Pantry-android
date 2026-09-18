@@ -1,10 +1,19 @@
 package com.souspantry.app.ui.auth
 
+import android.content.Context
+import android.util.Log
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.souspantry.app.BuildConfig
 import com.souspantry.app.data.local.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -13,11 +22,16 @@ import javax.inject.Inject
 
 data class AuthState(
     val loadingGoogle : Boolean = false,
-    val loadingEmail  : Boolean = false,
-    val emailMode     : Boolean = false,   // false = social buttons, true = email form
     val error         : String? = null,
 )
 
+/**
+ * Google Sign-In only, mirroring iOS (Apple + Google there; Google here).
+ *
+ * The provider owns the credentials: on success we keep the name and email in
+ * device preferences and nothing else. Sous Pantry has no user database and no
+ * email system, so there is deliberately no email/password sign-up.
+ */
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val prefs: UserPreferencesRepository,
@@ -26,47 +40,58 @@ class AuthViewModel @Inject constructor(
     private val _state = MutableStateFlow(AuthState())
     val state = _state.asStateFlow()
 
-    fun toggleEmailMode() = _state.update { it.copy(emailMode = !it.emailMode, error = null) }
-    fun clearError()      = _state.update { it.copy(error = null) }
+    fun clearError() = _state.update { it.copy(error = null) }
 
     /**
-     * Continue with Google.
-     *
-     * TODO(auth): swap this local sign-in for a real Google credential flow.
-     *   1. Android Credential Manager → Google ID token (needs a Google Cloud
-     *      OAuth *Web* client ID + the app's SHA-1 registered as an Android client).
-     *   2. supabase.auth.signInWith(IDToken) { idToken = … } using the Supabase
-     *      *anon* key (clients use anon, not the service-role key in backend/.env).
-     * For now this captures the user locally so the sign-in gate works end-to-end.
+     * Runs the real Google account picker. The user is only signed in when Google
+     * returns an authenticated account — cancelling or failing leaves them here.
      */
-    fun continueWithGoogle(onSignedIn: () -> Unit) = viewModelScope.launch {
-        _state.update { it.copy(loadingGoogle = true, error = null) }
-        delay(450) // brief feedback; real flow will replace this
-        prefs.setUserName("Chef")
-        prefs.setSignedIn(true)
-        _state.update { it.copy(loadingGoogle = false) }
-        onSignedIn()
-    }
-
-    /**
-     * Continue with email + password.
-     *
-     * TODO(auth): swap for supabase.auth.signInWith(Email)/signUpWith(Email)
-     *   once the Supabase anon key is wired into BuildConfig.
-     */
-    fun continueWithEmail(email: String, password: String, onSignedIn: () -> Unit) = viewModelScope.launch {
-        val trimmed = email.trim()
-        if (!trimmed.contains("@") || password.length < 6) {
-            _state.update { it.copy(error = "Enter a valid email and a password of at least 6 characters.") }
+    fun continueWithGoogle(context: Context, onSignedIn: () -> Unit) = viewModelScope.launch {
+        val serverClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
+        if (serverClientId.isBlank()) {
+            _state.update { it.copy(error = "Google sign-in isn't configured in this build.") }
             return@launch
         }
-        _state.update { it.copy(loadingEmail = true, error = null) }
-        delay(450)
-        prefs.setUserEmail(trimmed)
-        // Derive a friendly display name from the email's local part if none set.
-        prefs.setUserName(trimmed.substringBefore("@").replaceFirstChar { it.uppercase() })
-        prefs.setSignedIn(true)
-        _state.update { it.copy(loadingEmail = false) }
-        onSignedIn()
+
+        _state.update { it.copy(loadingGoogle = true, error = null) }
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(GetSignInWithGoogleOption.Builder(serverClientId).build())
+            .build()
+
+        val outcome = runCatching { CredentialManager.create(context).getCredential(context, request) }
+        _state.update { it.copy(loadingGoogle = false) }
+
+        outcome
+            .onSuccess { response ->
+                val credential = response.credential
+                val isGoogle = credential is CustomCredential &&
+                    credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                if (!isGoogle) {
+                    _state.update { it.copy(error = "Couldn't read that Google account. Try again.") }
+                    return@onSuccess
+                }
+                val google = GoogleIdTokenCredential.createFrom(credential.data)
+                // `id` is the account's email address.
+                prefs.setUserEmail(google.id)
+                prefs.setUserName(google.displayName?.takeIf { it.isNotBlank() } ?: google.id.substringBefore("@"))
+                prefs.setSignedIn(true)
+                // TODO(billing): identify this email with the subscription layer once
+                // Play Billing is wired up, so entitlements follow the account (iOS
+                // does this with RevenueCat).
+                onSignedIn()
+            }
+            .onFailure { e ->
+                Log.e("Auth", "Google sign-in failed", e)
+                _state.update {
+                    it.copy(
+                        error = when (e) {
+                            is GetCredentialCancellationException -> null   // user backed out; no scolding
+                            is NoCredentialException -> "No Google account found on this device. Add one in Settings, then try again."
+                            else -> "Couldn't sign in with Google. Check your connection and try again."
+                        }
+                    )
+                }
+            }
     }
 }

@@ -215,10 +215,21 @@ class UserPreferencesRepository @Inject constructor(
 
     /** Wipes every user-set preference. Used by Delete Account / Log Out flows. */
     suspend fun clearAll() = context.dataStore.edit { prefs ->
-        // Keep deviceId stable across resets so FCM / analytics still work.
-        val keepDeviceId = prefs[KEY_DEVICE_ID]
+        // Keep deviceId stable across resets so FCM / analytics still work, and
+        // keep the funnel flag: signing out or deleting the account must never
+        // send a returning user back through the wizard (mirrors iOS).
+        val keepDeviceId  = prefs[KEY_DEVICE_ID]
+        val keepFunnel    = prefs[KEY_FUNNEL_DONE]
         prefs.clear()
         if (keepDeviceId != null) prefs[KEY_DEVICE_ID] = keepDeviceId
+        if (keepFunnel != null)   prefs[KEY_FUNNEL_DONE] = keepFunnel
+    }
+
+    /** Sign out: drops the local profile only. Pantry data and the funnel flag stay. */
+    suspend fun signOut() = context.dataStore.edit { prefs ->
+        prefs.remove(KEY_USER_NAME)
+        prefs.remove(KEY_USER_EMAIL)
+        prefs[KEY_SIGNED_IN] = false
     }
 }
 
