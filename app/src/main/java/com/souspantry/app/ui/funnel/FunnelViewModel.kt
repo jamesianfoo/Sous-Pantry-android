@@ -111,12 +111,7 @@ class FunnelViewModel @Inject constructor(
 
     fun toggleMulti(stepId: String, optionId: String, max: Int) {
         _state.update { s ->
-            val cur = s.multis[stepId] ?: emptySet()
-            val next = when {
-                cur.contains(optionId) -> cur - optionId
-                cur.size >= max        -> cur
-                else                   -> cur + optionId
-            }
+            val next = toggleMultiSelection(s.multis[stepId] ?: emptySet(), optionId, max)
             s.copy(multis = s.multis + (stepId to next))
         }
         val set = _state.value.multis[stepId] ?: emptySet()
@@ -222,5 +217,22 @@ class FunnelViewModel @Inject constructor(
         shopping.upsertAll(seeds.map {
             ShoppingItem(name = it.name, category = it.category, quantity = null, priority = it.priority, reason = "manual")
         })
+    }
+}
+
+/** The "none" option is exclusive on every multi-select step. */
+private const val NONE_OPTION = "none"
+
+/**
+ * Multi-select toggle rule, mirroring iOS: tapping a selected option clears it;
+ * tapping "none" replaces the whole selection; tapping anything else drops
+ * "none" first, then adds it if the cap allows.
+ */
+internal fun toggleMultiSelection(current: Set<String>, optionId: String, max: Int): Set<String> = when {
+    current.contains(optionId) -> current - optionId
+    optionId == NONE_OPTION    -> setOf(NONE_OPTION)
+    else                       -> {
+        val without = current - NONE_OPTION
+        if (without.size >= max) without else without + optionId
     }
 }
