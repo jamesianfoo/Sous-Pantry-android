@@ -46,15 +46,15 @@ import kotlinx.coroutines.launch
 private const val TOTAL_PAGES = 10
 private const val PRO_PAGE    = 9
 
-private data class FeaturePage(val emoji: String, val tag: String?, val headline: String, val subtitle: String, val cta: String)
+private data class FeaturePage(val tag: String?, val headline: String, val subtitle: String, val cta: String)
 
 private val FEATURE_PAGES = listOf(
-    FeaturePage("🍳", null,            "Your kitchen,\nalways in sync.",            "Sous Pantry uses AI to track what you have, plan what to cook, and shop smarter — all in one place.", "Get Started"),
-    FeaturePage("🧾", "Pantry",        "Know exactly what\nyou have.",              "Scan a receipt from your preferred local supermarket, take a photo of your pantry or items, or add them manually.", "Next"),
-    FeaturePage("🍽️", "Plan & Cook",   "AI meals built\naround your pantry.",       "Sous Pantry suggests recipes using what's already in your kitchen. Cook one and your pantry updates automatically.", "Next"),
-    FeaturePage("📅", "My Plans",      "Plan your week.\nCook with confidence.",    "Schedule meals for the week ahead and see exactly what you need in your pantry.", "Next"),
-    FeaturePage("♻️", "Smart Kitchen", "Your pantry updates\nitself after cooking.","After you cook a meal, Sous Pantry deducts the used ingredients and helps restock what you've run out of.", "Next"),
-    FeaturePage("🔔", "Reminders",     "Keep your pantry\nhonest.",                 "Get a nudge to audit your pantry on your schedule. Sous Pantry will surface the oldest items first.", "Next"),
+    FeaturePage(null,            "Your kitchen,\nalways in sync.",            "Sous Pantry uses AI to track what you have, plan what to cook, and shop smarter — all in one place.", "Get Started"),
+    FeaturePage("Pantry",        "Know exactly what\nyou have.",              "Scan a receipt from your preferred local supermarket, take a photo of your pantry or items, or add them manually.", "Next"),
+    FeaturePage("Plan & Cook",   "AI meals built\naround your pantry.",       "Sous Pantry suggests recipes using what's already in your kitchen. Cook one and your pantry updates automatically.", "Next"),
+    FeaturePage("My Plans",      "Plan your week.\nCook with confidence.",    "Schedule meals for the week ahead and see exactly what you need in your pantry.", "Next"),
+    FeaturePage("Smart Kitchen", "Your pantry updates\nitself after cooking.","After you cook a meal, Sous Pantry deducts the used ingredients and helps restock what you've run out of.", "Next"),
+    FeaturePage("Reminders",     "Keep your pantry\nhonest.",                 "Get a nudge to audit your pantry on your schedule. Sous Pantry will surface the oldest items first.", "Continue"),
 )
 
 private data class Opt(val id: String, val icon: ImageVector, val title: String, val detail: String)
@@ -105,7 +105,6 @@ fun OnboardingScreen(
                 page      = FEATURE_PAGES[page],
                 pageIndex = page,
                 onNext    = { next() },
-                onSkip    = { skipToPro() },
             )
             6 -> WizardScreen(
                 step       = 1,
@@ -151,24 +150,20 @@ fun OnboardingScreen(
 // ── Feature screen (pages 0–5) ────────────────────────────────────────────────
 
 @Composable
-private fun FeatureScreen(page: FeaturePage, pageIndex: Int, onNext: () -> Unit, onSkip: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
-            Text("Skip", color = Slate.copy(alpha = 0.6f), fontSize = 14.sp, modifier = Modifier.clickable(onClick = onSkip).padding(8.dp))
-        }
-
+private fun FeatureScreen(page: FeaturePage, pageIndex: Int, onNext: () -> Unit) {
+    // No Skip anywhere: the intro can't be skipped, same rule as the funnel.
+    Column(modifier = Modifier.fillMaxSize().background(Cream).padding(horizontal = 24.dp)) {
         Spacer(Modifier.weight(1f))
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .size(width = 300.dp, height = 200.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color.White)
-                .border(1.dp, Color.Black.copy(alpha = 0.06f), RoundedCornerShape(20.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(page.emoji, fontSize = 88.sp)
+        Box(Modifier.align(Alignment.CenterHorizontally)) {
+            when (pageIndex) {
+                0    -> SousWordmark()
+                1    -> PantryMockup()
+                2    -> PlanCookMockup()
+                3    -> MyPlansMockup()
+                4    -> ConfirmCookedMockup()
+                else -> PantryAuditMockup()
+            }
         }
 
         Spacer(Modifier.weight(1f))
@@ -181,7 +176,9 @@ private fun FeatureScreen(page: FeaturePage, pageIndex: Int, onNext: () -> Unit,
 
         Spacer(Modifier.height(28.dp))
 
-        DotIndicators(current = pageIndex, total = 6)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            DotIndicators(current = pageIndex, total = 6)
+        }
         Spacer(Modifier.height(14.dp))
         CtaButton(page.cta, onClick = onNext)
         Spacer(Modifier.height(32.dp))

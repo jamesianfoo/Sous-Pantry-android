@@ -117,6 +117,7 @@ class AccountViewModel @Inject constructor(
     fun setSousAIEnabled(on: Boolean)      = viewModelScope.launch { prefs.setSousAIEnabled(on) }
     fun setForcePremium(on: Boolean)       = viewModelScope.launch { prefs.setForcePremium(on) }
     fun resetFunnel()                      = viewModelScope.launch { prefs.resetFunnel() }
+    fun resetOnboarding()                  = viewModelScope.launch { prefs.resetOnboarding() }
 
     /** Instant toggle, hard cap 3 — selecting a 4th mood is a no-op (mirrors iOS). */
     fun toggleMood(id: String) = viewModelScope.launch {

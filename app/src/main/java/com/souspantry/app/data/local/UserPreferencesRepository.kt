@@ -157,6 +157,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setFunnelDone()                       = context.dataStore.edit { it[KEY_FUNNEL_DONE] = true }
     /** Debug: replay the funnel. Writes an explicit false — removing the key would re-trigger the grandfather rule. */
     suspend fun resetFunnel()                         = context.dataStore.edit { it[KEY_FUNNEL_DONE] = false }
+    /** Debug only: replays the intro carousel on next launch. Leaves pantry data alone. */
+    suspend fun resetOnboarding()                     = context.dataStore.edit { it[KEY_ONBOARDING_DONE] = false }
 
     // Generic funnel-answer writes — one setter per value shape, keys public above.
     suspend fun setFunnelString(key: Preferences.Key<String>, value: String)         = context.dataStore.edit { it[key] = value }

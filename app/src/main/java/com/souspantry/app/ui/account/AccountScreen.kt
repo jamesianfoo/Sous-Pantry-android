@@ -149,6 +149,22 @@ fun AccountScreen(
                                 )
                             }
                         }
+                        Divider()
+                        Row(
+                            modifier          = Modifier.fillMaxWidth()
+                                .clickable { vm.resetOnboarding() }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Debug: Replay intro screens", color = Color(0xFFE65100), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Resets onboarding_done — kill and reopen the app to see the 6 intro screens. Pantry data is kept.",
+                                    color    = Slate,
+                                    fontSize = 11.sp,
+                                )
+                            }
+                        }
                     }
                 }
             }
