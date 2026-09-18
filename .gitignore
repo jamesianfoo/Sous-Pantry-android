@@ -17,3 +17,6 @@ backend/.env
 backend/node_modules/
 backend/promoCodes.json
 backend/redeemedCodes.json
+
+# Signed release output
+/app/release/

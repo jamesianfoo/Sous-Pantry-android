@@ -152,7 +152,7 @@ fun EReceiptSyncScreen(
             ) {
                 Icon(Icons.Filled.Lock, null, tint = Slate.copy(alpha = 0.5f), modifier = Modifier.size(16.dp))
                 Text(
-                    "Your login details are entered directly on the store's own site. Location is used only to detect when you leave a store and is never stored or shared.",
+                    "Your login details are entered directly on the store's own site.",
                     color    = Slate.copy(alpha = 0.7f),
                     fontSize = 12.sp,
                 )
