@@ -40,7 +40,6 @@ import com.souspantry.app.ui.pantry.ReceiptScanScreen
 import com.souspantry.app.ui.plancook.PlanCookScreen
 import com.souspantry.app.ui.account.AccountScreen
 import com.souspantry.app.ui.auth.AuthScreen
-import com.souspantry.app.ui.founder.FounderNoteScreen
 import com.souspantry.app.ui.funnel.FunnelScreen
 import com.souspantry.app.ui.paywall.PaywallScreen
 import com.souspantry.app.ui.setup.SetupWizardScreen
@@ -62,7 +61,6 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
     data object Onboarding: Screen("onboarding","Onboarding")
     data object SetupWizard: Screen("setupwizard","Setup")
     data object Funnel     : Screen("funnel",    "Get Started")
-    data object FounderNote: Screen("foundernote","Note")
     data object Auth      : Screen("auth",      "Sign In")
     data object Paywall   : Screen("paywall",   "Premium")
 }
@@ -82,16 +80,15 @@ fun SousPantryNavHost() {
     when (val g = gate) {
         AppGate.Loading   -> SplashScreen()
         is AppGate.Ready  -> SousPantryAppScaffold(
-            // Mirrors iOS Sous_PantryApp: auth → onboarding → funnel → note → app.
+            // auth → intro → funnel (ends in the hard paywall) → app. The founder
+            // note was removed: it offered a free trial that no longer exists.
             startDest      = when {
                 !g.signedIn        -> Screen.Auth.route
                 !g.onboardingDone  -> Screen.Onboarding.route
                 !g.funnelDone      -> Screen.Funnel.route
-                !g.founderNoteSeen -> Screen.FounderNote.route
                 else               -> Screen.Home.route
             },
             onboardingDone  = g.onboardingDone,
-            founderNoteSeen = g.founderNoteSeen,
         )
     }
 }
@@ -105,7 +102,7 @@ private fun SplashScreen() {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, founderNoteSeen: Boolean) {
+private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean) {
     val navController = rememberNavController()
     val navBackStack  by navController.currentBackStackEntryAsState()
     val currentDest   = navBackStack?.destination
@@ -223,34 +220,17 @@ private fun SousPantryAppScaffold(startDest: String, onboardingDone: Boolean, fo
             }
             composable(Screen.SetupWizard.route) {
                 SetupWizardScreen(onComplete = {
-                    // Wizard done → founder note (first run) or straight Home.
-                    val dest = if (founderNoteSeen) Screen.Home.route else Screen.FounderNote.route
-                    navController.navigate(dest) {
+                    navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.SetupWizard.route) { inclusive = true }
                     }
                 })
             }
             composable(Screen.Funnel.route) {
                 FunnelScreen(onComplete = {
-                    // Funnel done (paywall hand-off) → founder note or straight Home.
-                    val dest = if (founderNoteSeen) Screen.Home.route else Screen.FounderNote.route
-                    navController.navigate(dest) {
+                    navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Funnel.route) { inclusive = true }
                     }
                 })
-            }
-            composable(Screen.FounderNote.route) {
-                FounderNoteScreen(
-                    onProceed = {
-                        // "Let's get started" → paywall, then Home.
-                        navController.navigate(Screen.Paywall.route)
-                    },
-                    onSkip = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.FounderNote.route) { inclusive = true }
-                        }
-                    },
-                )
             }
             composable(Screen.Paywall.route) {
                 PaywallScreen(
