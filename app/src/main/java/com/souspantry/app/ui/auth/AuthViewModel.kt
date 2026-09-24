@@ -82,13 +82,16 @@ class AuthViewModel @Inject constructor(
                 onSignedIn()
             }
             .onFailure { e ->
-                Log.e("Auth", "Google sign-in failed", e)
+                Log.e("SousAuth", "Google sign-in failed", e)
+                // Debug builds put the real exception on screen: Play Services' own
+                // logs drown ours out, so the device is the quickest place to read it.
+                val detail = if (BuildConfig.DEBUG) "\n\n${e::class.java.simpleName}: ${e.message}" else ""
                 _state.update {
                     it.copy(
                         error = when (e) {
                             is GetCredentialCancellationException -> null   // user backed out; no scolding
-                            is NoCredentialException -> "No Google account found on this device. Add one in Settings, then try again."
-                            else -> "Couldn't sign in with Google. Check your connection and try again."
+                            is NoCredentialException -> "No Google account found on this device. Add one in Settings, then try again.$detail"
+                            else -> "Couldn't sign in with Google. Check your connection and try again.$detail"
                         }
                     )
                 }
