@@ -149,5 +149,3 @@ private fun AuthButton(
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)w
