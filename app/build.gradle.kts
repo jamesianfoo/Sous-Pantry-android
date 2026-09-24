@@ -46,6 +46,11 @@ android {
         // The app's signing SHA-1 must also be registered as an Android client.
         val googleClientId = localProps.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleClientId\"")
+
+        // RevenueCat public SDK key for the Google Play app (starts "goog_"). It is
+        // a public key by design; the secret key never ships. Blank = billing off.
+        val rcKey = localProps.getProperty("REVENUECAT_ANDROID_KEY") ?: ""
+        buildConfigField("String", "REVENUECAT_ANDROID_KEY", "\"$rcKey\"")
     }
 
     buildTypes {
@@ -105,6 +110,9 @@ dependencies {
     implementation(libs.credentials)
     implementation(libs.credentials.play)
     implementation(libs.googleid)
+
+    // RevenueCat (Google Play Billing) — same dashboard and entitlement as iOS
+    implementation(libs.revenuecat)
 
     // ML Kit (barcode + text recognition)
     implementation(libs.mlkit.barcode)

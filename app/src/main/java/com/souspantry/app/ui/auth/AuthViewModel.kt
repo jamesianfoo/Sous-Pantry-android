@@ -13,6 +13,7 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.souspantry.app.BuildConfig
 import com.souspantry.app.data.local.UserPreferencesRepository
+import com.souspantry.app.services.Subscriptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +35,8 @@ data class AuthState(
  */
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val prefs: UserPreferencesRepository,
+    private val prefs         : UserPreferencesRepository,
+    private val subscriptions : Subscriptions,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -76,9 +78,8 @@ class AuthViewModel @Inject constructor(
                 prefs.setUserEmail(google.id)
                 prefs.setUserName(google.displayName?.takeIf { it.isNotBlank() } ?: google.id.substringBefore("@"))
                 prefs.setSignedIn(true)
-                // TODO(billing): identify this email with the subscription layer once
-                // Play Billing is wired up, so entitlements follow the account (iOS
-                // does this with RevenueCat).
+                // Purchases follow the account, not the device (iOS does the same).
+                subscriptions.identify(google.id)
                 onSignedIn()
             }
             .onFailure { e ->

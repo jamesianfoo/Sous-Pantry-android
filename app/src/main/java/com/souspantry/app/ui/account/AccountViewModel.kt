@@ -45,6 +45,7 @@ class AccountViewModel @Inject constructor(
     private val myRecipe  : MyRecipeRepository,
     private val saved     : SavedRecipeRepository,
     private val shopping  : ShoppingRepository,
+    private val subscriptions : com.souspantry.app.services.Subscriptions,
 ) : ViewModel() {
 
     // Compose 13 flows into one state. We chain two combines because combine() has
@@ -166,8 +167,10 @@ class AccountViewModel @Inject constructor(
         myRecipe.deleteAll()
         saved.deleteAll()
         shopping.deleteAll()
-        // Wipe DataStore (keeps deviceId; onboarding flag is cleared → onboarding shows)
+        // Full reset (keeps only deviceId): intro + funnel run again, as on iOS.
         prefs.clearAll()
+        // Does NOT cancel the Google Play subscription — the user manages that in Play.
+        subscriptions.unidentify()
         onComplete()
     }
 }

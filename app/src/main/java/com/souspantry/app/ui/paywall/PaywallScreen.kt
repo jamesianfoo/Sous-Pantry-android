@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.souspantry.app.services.Plan
 import com.souspantry.app.ui.theme.*
 
 private val Gold1 = Color(0xFFEAC77D)
@@ -54,6 +55,8 @@ fun PaywallScreen(
 ) {
     val state by vm.state.collectAsState()
     val context = LocalContext.current
+    // Google Play's purchase sheet needs the Activity, not the application context.
+    val activity = context as? android.app.Activity
 
     Column(
         modifier = Modifier
@@ -87,7 +90,10 @@ fun PaywallScreen(
                         Text("control.", color = Gold1, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text("7-day free trial included.", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
+                    Text(
+                        state.selected?.freeTrial?.let { "$it included." } ?: "Cancel anytime.",
+                        color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp,
+                    )
                 }
                 if (showClose) Box(
                     modifier = Modifier
@@ -122,7 +128,10 @@ fun PaywallScreen(
 
             // Plan cards
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PAYWALL_PLANS.forEach { plan ->
+                if (state.loading) {
+                    CircularProgressIndicator(color = Gold1, modifier = Modifier.padding(16.dp))
+                }
+                state.plans.forEach { plan ->
                     PlanCard(
                         plan       = plan,
                         isSelected = state.selectedId == plan.id,
@@ -152,7 +161,9 @@ fun PaywallScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .clickable(enabled = plan != null && !state.processing) { vm.purchase(onPurchased) },
+                    .clickable(enabled = plan != null && !state.processing && activity != null) {
+                        activity?.let { vm.purchase(it, onPurchased) }
+                    },
                 shape    = RoundedCornerShape(16.dp),
                 color    = Color.Transparent,
             ) {
@@ -174,7 +185,10 @@ fun PaywallScreen(
                     } else if (plan != null) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("Continue · ${plan.price} / ${plan.periodShort}", color = PaywallNavy, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                            Text("after 7-day free trial · cancel anytime", color = PaywallNavy.copy(alpha = 0.75f), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                plan.freeTrial?.let { "after $it · cancel anytime" } ?: "cancel anytime",
+                                color = PaywallNavy.copy(alpha = 0.75f), fontSize = 11.sp, fontWeight = FontWeight.Medium,
+                            )
                         }
                     } else {
                         Text("Continue", color = Color.White.copy(0.5f), fontSize = 17.sp, fontWeight = FontWeight.Bold)
@@ -224,7 +238,7 @@ fun PaywallScreen(
 
 @Composable
 private fun PlanCard(
-    plan       : PaywallPlan,
+    plan       : Plan,
     isSelected : Boolean,
     onClick    : () -> Unit,
     modifier   : Modifier = Modifier,
@@ -260,7 +274,7 @@ private fun PlanCard(
             }
             Text(plan.price, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             Text(plan.subtitle, color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp)
-            Text("7-day free trial", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            plan.freeTrial?.let { Text(it, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, fontWeight = FontWeight.Medium) }
         }
     }
 }

@@ -84,6 +84,6 @@ eReceipt failures log under `adb logcat -s EReceipt:E`.
 
 Known gaps compared with iOS:
 
-- Play Billing is not wired up yet; purchases are a local stub.
+- Subscriptions run through RevenueCat over Google Play Billing; the paywall needs the RevenueCat Android key in `local.properties` and products configured in Play Console and the RevenueCat dashboard.
 - No price history (iOS records prices from receipts).
 - Trial-ending notification and the spotlight tour are not built.
