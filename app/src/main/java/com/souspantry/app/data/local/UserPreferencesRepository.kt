@@ -104,6 +104,8 @@ class UserPreferencesRepository @Inject constructor(
 
         // Home: when the Pantry "Expiring" filter was last opened (iOS sp_lastAuditDate).
         val KEY_LAST_AUDIT_DATE  = longPreferencesKey("last_audit_date")
+        // Price Trends "spending streak" ceiling per shop, whole currency units (iOS spendThreshold, default 150).
+        val KEY_SPEND_THRESHOLD  = intPreferencesKey("spend_threshold")
 
         // Cooking streak (iOS StreakService, same key names). Awards: streak_awarded_{id}.
         val KEY_STREAK_CURRENT     = intPreferencesKey("streak_currentStreak")
@@ -174,6 +176,9 @@ class UserPreferencesRepository @Inject constructor(
         }.toMap()
     }
     val lastAuditDate: Flow<Long?> = context.dataStore.data.map { it[KEY_LAST_AUDIT_DATE] }
+    val spendThreshold: Flow<Int> = context.dataStore.data.map {
+        it[KEY_SPEND_THRESHOLD] ?: com.souspantry.app.services.PriceInsights.DEFAULT_SPEND_THRESHOLD.toInt()
+    }
 
     // ── Writes ───────────────────────────────────────────────────────────────
 
@@ -235,6 +240,7 @@ class UserPreferencesRepository @Inject constructor(
     /** Pantry stamps this whenever the "Expiring" filter is selected (iOS PantryView). */
     suspend fun setLastAuditDate(at: Long = System.currentTimeMillis()) =
         context.dataStore.edit { it[KEY_LAST_AUDIT_DATE] = at }
+    suspend fun setSpendThreshold(value: Int) = context.dataStore.edit { it[KEY_SPEND_THRESHOLD] = value.coerceAtLeast(1) }
 
     suspend fun setSignedIn(on: Boolean)              = context.dataStore.edit { it[KEY_SIGNED_IN] = on }
 

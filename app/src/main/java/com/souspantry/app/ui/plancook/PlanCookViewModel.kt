@@ -14,6 +14,7 @@ import com.souspantry.app.data.repository.PantryRepository
 import com.souspantry.app.data.repository.ShoppingRepository
 import com.souspantry.app.services.ApiService
 import com.souspantry.app.services.DirectClaude
+import com.souspantry.app.services.NavSignals
 import com.souspantry.app.services.RecipeLink
 import com.souspantry.app.services.RecipeLinkResolver
 import com.souspantry.app.services.RecipeImages
@@ -81,6 +82,7 @@ class PlanCookViewModel @Inject constructor(
     private val shopping : ShoppingRepository,
     private val history  : MealHistoryRepository,
     private val streak   : StreakService,
+    private val signals  : NavSignals,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PlanCookState())
@@ -99,6 +101,13 @@ class PlanCookViewModel @Inject constructor(
             val pantryItems = repo.items.first()
             _state.update { it.copy(userName = name, pantryCount = pantryItems.size) }
             sendGreeting()
+            // Home "See what to cook →" hands over an opening message (iOS pendingSousMessage).
+            signals.pendingSousMessage.collect { msg ->
+                if (msg != null) {
+                    signals.pendingSousMessage.value = null
+                    sendMessage(msg)
+                }
+            }
         }
         // Premium = a paywall purchase OR the debug force toggle.
         viewModelScope.launch {

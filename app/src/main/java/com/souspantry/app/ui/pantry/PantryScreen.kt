@@ -85,6 +85,17 @@ fun PantryScreen(
     var selectedCategory   by remember { mutableStateOf<String?>(null) }
     var specialFilter      by remember { mutableStateOf<String?>(null) } // "New" | "Expiring" | null
 
+    // Home → "View Expiring Items": open on the Expiring filter (one-shot signal).
+    LaunchedEffect(Unit) {
+        vm.showExpiringFilter.collect { wanted ->
+            if (wanted) {
+                specialFilter    = "Expiring"
+                selectedCategory = null
+                vm.clearExpiringFilter()
+            }
+        }
+    }
+
     // Voice search launcher
     val voiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -167,6 +178,7 @@ fun PantryScreen(
                         specialFilter    = null
                     },
                     onSelectSpecial     = {
+                        if (it == "Expiring" && specialFilter != it) vm.markAuditChecked()
                         specialFilter    = if (specialFilter == it) null else it
                         selectedCategory = null
                     },
