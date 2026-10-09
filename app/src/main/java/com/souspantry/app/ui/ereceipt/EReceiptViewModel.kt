@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.souspantry.app.data.local.UserPreferencesRepository
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.data.repository.PantryRepository
+import com.souspantry.app.data.repository.PriceRepository
 import com.souspantry.app.services.ApiService
 import com.souspantry.app.services.DirectClaude
+import com.souspantry.app.services.ParsedReceipt
 import com.souspantry.app.ui.funnel.REGION_SHOPS
 import com.souspantry.app.ui.pantry.CATEGORY_ORDER
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -142,6 +144,7 @@ class EReceiptViewModel @Inject constructor(
     private val api    : ApiService,
     private val claude : DirectClaude,
     private val pantry : PantryRepository,
+    private val prices : PriceRepository,
     private val prefs  : UserPreferencesRepository,
 ) : ViewModel() {
 
@@ -191,8 +194,8 @@ class EReceiptViewModel @Inject constructor(
     /**
      * One pipeline for every store: the page text (read from the WebView after the
      * expand script) is parsed by the model through the Worker proxy, then added to
-     * the pantry. Mirrors iOS syncReceipt — minus price history, which Android
-     * doesn't have yet.
+     * the pantry, and every priced line is logged as a PriceRecord. Mirrors iOS
+     * syncReceipt.
      */
     fun syncFromPageText(store: Store, pageText: String) = viewModelScope.launch {
         if (pageText.isBlank()) {
@@ -200,22 +203,21 @@ class EReceiptViewModel @Inject constructor(
             return@launch
         }
         _transient.update { it.copy(syncing = true, result = null) }
+        val knownStores = REGION_SHOPS[regionOrDefault(prefs.funnelRegion.first())].orEmpty().map { it.label }
         runCatching {
-            if (claude.enabled) {
-                val region = regionOrDefault(prefs.funnelRegion.first())
-                val knownStores = REGION_SHOPS[region].orEmpty().map { it.label }
-                claude.parseReceiptText(pageText, knownStores, CATEGORY_ORDER).items
-            } else {
-                api.parseReceiptText(mapOf("text" to pageText))
-            }
+            if (claude.enabled) claude.parseReceiptText(pageText, knownStores, CATEGORY_ORDER)
+            else ParsedReceipt(null, api.parseReceiptText(mapOf("text" to pageText)))
         }
-            .onSuccess { items ->
+            .onSuccess { (storeName, items) ->
                 if (items.isEmpty()) {
                     _transient.update { it.copy(syncing = false, result = SyncResult.Error("No grocery items found. Navigate to a receipt page first.")) }
                 } else {
-                    pantry.addAll(items.map {
+                    val added = items.map {
                         PantryItem(name = it.name, category = it.category, quantity = it.count.coerceAtLeast(1), notes = it.quantity)
-                    })
+                    }
+                    pantry.addAll(added)
+                    // Digital sync: the store is known from the session when the parser didn't name one.
+                    prices.recordReceipt(items, added, storeName ?: store.name, knownStores)
                     // "2 x 500g" counts as 2, so the banner matches the receipt.
                     val units = items.sumOf { it.count.coerceAtLeast(1) }
                     _transient.update {

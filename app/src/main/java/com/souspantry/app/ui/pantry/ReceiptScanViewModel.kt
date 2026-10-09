@@ -10,9 +10,11 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.data.models.ReceiptLineItem
 import com.souspantry.app.data.repository.PantryRepository
+import com.souspantry.app.data.repository.PriceRepository
 import com.souspantry.app.data.local.UserPreferencesRepository
 import com.souspantry.app.services.ApiService
 import com.souspantry.app.services.DirectClaude
+import com.souspantry.app.services.ParsedReceipt
 import com.souspantry.app.ui.funnel.REGION_SHOPS
 import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,10 +49,15 @@ class ReceiptScanViewModel @Inject constructor(
     private val claude : DirectClaude,
     private val prefs  : UserPreferencesRepository,
     private val repo   : PantryRepository,
+    private val prices : PriceRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<ReceiptScanState>(ReceiptScanState.Ready)
     val state = _state.asStateFlow()
+
+    /** Store named on the last parsed receipt (null when the parser saw none) and the region's store labels. */
+    private var parsedStore: String?      = null
+    private var knownStores: List<String> = emptyList()
 
     fun processImage(bitmap: Bitmap) = viewModelScope.launch {
         _state.value = ReceiptScanState.Loading
@@ -61,12 +68,12 @@ class ReceiptScanViewModel @Inject constructor(
                 error("No text detected. Make sure the receipt is well-lit and in focus.")
             }
             // Same store-agnostic parser as eReceipt sync, via the Worker proxy.
-            if (claude.enabled) {
-                val region = prefs.funnelRegion.first().ifBlank { "AU" }
-                claude.parseReceiptText(ocrText, REGION_SHOPS[region].orEmpty().map { it.label }, CATEGORY_ORDER).items
-            } else {
-                api.parseReceiptText(mapOf("text" to ocrText))
-            }
+            knownStores = REGION_SHOPS[prefs.funnelRegion.first().ifBlank { "AU" }].orEmpty().map { it.label }
+            val parsed =
+                if (claude.enabled) claude.parseReceiptText(ocrText, knownStores, CATEGORY_ORDER)
+                else ParsedReceipt(null, api.parseReceiptText(mapOf("text" to ocrText)))
+            parsedStore = parsed.storeName
+            parsed.items
         }
             .onSuccess { _state.value = ReceiptScanState.Results(it) }
             .onFailure { e ->
@@ -88,9 +95,12 @@ class ReceiptScanViewModel @Inject constructor(
         }
 
     fun saveAll(items: List<ReceiptLineItem>) = viewModelScope.launch {
-        repo.addAll(items.map {
+        val added = items.map {
             PantryItem(name = it.name, category = it.category, quantity = it.count.coerceAtLeast(1), notes = it.quantity)
-        })
+        }
+        repo.addAll(added)
+        // Paper receipts have no session store: the parsed name, else "Others".
+        prices.recordReceipt(items, added, parsedStore, knownStores)
         _state.value = ReceiptScanState.Saved
     }
 

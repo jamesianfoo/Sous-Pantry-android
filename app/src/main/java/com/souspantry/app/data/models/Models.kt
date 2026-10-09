@@ -18,6 +18,32 @@ data class PantryItem(
     val dateAdded                : Long    = System.currentTimeMillis(),
 )
 
+/** [PriceRecord.store] value for any store not in the user's region list. */
+const val OTHERS_STORE = "Others"
+
+/**
+ * One price observation, captured from a receipt scan or eReceipt sync
+ * (mirrors the iOS PriceRecord SwiftData model). Insights group by [itemName],
+ * case-insensitively, and the repository keeps only the 3 most recent records
+ * per item, as iOS does.
+ */
+@Entity(tableName = "price_records")
+data class PriceRecord(
+    @PrimaryKey val id : String  = java.util.UUID.randomUUID().toString(),
+    val pantryItemId   : String? = null,
+    val itemName       : String,
+    /** As printed on the receipt, in the receipt's own currency — never converted. */
+    val pricePerUnit   : Double,
+    val unitLabel      : String  = "each",          // "each" | "500g" | "1L"
+    val store          : String,                    // a REGION_SHOPS label or OTHERS_STORE
+    val customStore    : String? = null,            // only when store == OTHERS_STORE
+    val datePurchased  : Long    = System.currentTimeMillis(),   // epoch millis
+)
+
+/** Human-readable store label (resolves "Others" to the custom name). Extension so Room never sees it. */
+val PriceRecord.displayStore: String
+    get() = if (store == OTHERS_STORE) customStore ?: "Other" else store
+
 // ── API response models ───────────────────────────────────────────────────────
 
 data class IdentifyResponse(

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.souspantry.app.data.local.UserPreferencesRepository
 import com.souspantry.app.data.repository.MyRecipeRepository
 import com.souspantry.app.data.repository.PantryRepository
+import com.souspantry.app.data.repository.PriceRepository
 import com.souspantry.app.data.repository.SavedRecipeRepository
 import com.souspantry.app.data.repository.ShoppingRepository
 import com.souspantry.app.data.repository.WeekPlanRepository
@@ -45,6 +46,7 @@ class AccountViewModel @Inject constructor(
     private val myRecipe  : MyRecipeRepository,
     private val saved     : SavedRecipeRepository,
     private val shopping  : ShoppingRepository,
+    private val prices    : PriceRepository,
     private val subscriptions : com.souspantry.app.services.Subscriptions,
 ) : ViewModel() {
 
@@ -167,6 +169,7 @@ class AccountViewModel @Inject constructor(
         myRecipe.deleteAll()
         saved.deleteAll()
         shopping.deleteAll()
+        prices.deleteAll()
         // Full reset (keeps only deviceId): intro + funnel run again, as on iOS.
         prefs.clearAll()
         // Does NOT cancel the Google Play subscription — the user manages that in Play.
