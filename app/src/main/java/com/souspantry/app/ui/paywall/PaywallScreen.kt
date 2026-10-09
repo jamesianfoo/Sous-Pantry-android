@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.souspantry.app.BuildConfig
 import com.souspantry.app.services.Plan
 import com.souspantry.app.ui.theme.*
 
@@ -41,9 +43,9 @@ private val BENEFITS = listOf(
     "Save suggested recipes",
     "Meal planner",
     "Digital receipt sync",
-    "Cloud sync & backup",
-    "Family sharing",
-    "Ad-free experience",
+    "Cloud sync",
+    "Family Sharing",
+    "Ad-free experiences",
 )
 
 @Composable
@@ -91,7 +93,8 @@ fun PaywallScreen(
                     }
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        state.selected?.freeTrial?.let { "$it included." } ?: "Cancel anytime.",
+                        // iOS: trial line only when a plan actually carries one.
+                        state.plans.firstNotNullOfOrNull { it.freeTrial }?.let { "$it included." } ?: "Unlock everything Sous can do.",
                         color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp,
                     )
                 }
@@ -126,25 +129,36 @@ fun PaywallScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Plan cards
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (state.loading) {
-                    CircularProgressIndicator(color = Gold1, modifier = Modifier.padding(16.dp))
+            // Plan cards — iOS: spinner while loading, two placeholder cards when
+            // there are no offerings (billing unconfigured / store unreachable).
+            when {
+                state.loading -> Box(Modifier.fillMaxWidth().padding(vertical = 40.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color.White)
                 }
-                state.plans.forEach { plan ->
-                    PlanCard(
-                        plan       = plan,
-                        isSelected = state.selectedId == plan.id,
-                        onClick    = { vm.select(plan.id) },
-                        modifier   = Modifier.weight(1f),
-                    )
+                state.plans.isEmpty() -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    repeat(2) {
+                        Box(Modifier.weight(1f).height(130.dp).clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.08f)))
+                    }
+                }
+                else -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    state.plans.forEach { plan ->
+                        PlanCard(
+                            plan       = plan,
+                            isSelected = state.selectedId == plan.id,
+                            onClick    = { vm.select(plan.id) },
+                            modifier   = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
 
             state.error?.let {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(20.dp))
                 Surface(shape = RoundedCornerShape(8.dp), color = Color.Red.copy(alpha = 0.2f)) {
-                    Text(it, color = Color.White, fontSize = 12.sp, modifier = Modifier.padding(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(12.dp)) {
+                        Icon(Icons.Filled.Error, null, tint = Color(0xFFFF453A), modifier = Modifier.size(16.dp))
+                        Text(it, color = Color.White, fontSize = 12.sp)
+                    }
                 }
             }
 
@@ -232,6 +246,15 @@ fun PaywallScreen(
                     modifier = Modifier.clickable { vm.restore(onPurchased) }.padding(8.dp),
                 )
             }
+
+            // Dev-only escape hatch, same place and colour as iOS; compiled out of release.
+            if (BuildConfig.DEBUG) Text(
+                "DEBUG · skip paywall",
+                color      = Color.Yellow.copy(alpha = 0.85f),
+                fontSize   = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier   = Modifier.clickable(onClick = onDismiss).padding(8.dp),
+            )
         }
     }
 }

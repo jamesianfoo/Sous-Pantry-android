@@ -34,7 +34,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.souspantry.app.BuildConfig
 import com.souspantry.app.services.TrialReminder
 import com.souspantry.app.ui.paywall.PaywallScreen
 import com.souspantry.app.ui.theme.*
@@ -62,20 +61,10 @@ fun FunnelScreen(
                     TrialReminder.scheduleFromPurchase(context, state.trialReminder)
                     vm.complete(onComplete)
                 },
-                onDismiss   = { /* unreachable: close hidden */ },
+                // Close is hidden; only the paywall's own DEBUG skip (debug builds) reaches this.
+                onDismiss   = { vm.complete(onComplete) },
                 showClose   = false,
             )
-            if (BuildConfig.DEBUG) {
-                Text(
-                    "DEBUG: skip paywall",
-                    color      = Color.White.copy(alpha = 0.6f),
-                    fontSize   = 11.sp,
-                    modifier   = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 48.dp, end = 16.dp)
-                        .clickable { vm.complete(onComplete) },
-                )
-            }
         }
     }
 }
