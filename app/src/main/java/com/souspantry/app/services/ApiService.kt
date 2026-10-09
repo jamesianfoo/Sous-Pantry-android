@@ -4,8 +4,9 @@ import com.souspantry.app.data.models.*
 import retrofit2.http.*
 
 /**
- * Retrofit interface matching the Node.js backend routes.
- * All Claude calls go through the backend — API key stays server-side.
+ * Retrofit interface matching the legacy Node.js backend routes.
+ * Fallback only: used when `DirectClaude.enabled` is false (no app secret
+ * configured). Barcode lookup no longer goes through here at all.
  */
 interface ApiService {
 

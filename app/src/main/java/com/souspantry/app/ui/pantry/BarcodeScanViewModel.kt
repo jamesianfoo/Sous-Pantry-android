@@ -4,7 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.data.repository.PantryRepository
-import com.souspantry.app.services.ApiService
+import com.souspantry.app.services.OpenFoodFacts
+import com.souspantry.app.services.ProductNotFoundException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,7 +21,7 @@ sealed interface BarcodeScanState {
 
 @HiltViewModel
 class BarcodeScanViewModel @Inject constructor(
-    private val api  : ApiService,
+    private val off  : OpenFoodFacts,
     private val repo : PantryRepository,
 ) : ViewModel() {
 
@@ -33,13 +34,18 @@ class BarcodeScanViewModel @Inject constructor(
         lastScanned = code
         viewModelScope.launch {
             _state.value = BarcodeScanState.Loading
-            runCatching { api.lookupBarcode(code) }
+            runCatching { off.lookup(code) }
                 .onSuccess { r ->
                     _state.value = BarcodeScanState.Result(
                         PantryItem(name = r.name ?: "Unknown", brand = r.brand, category = r.category)
                     )
                 }
-                .onFailure { _state.value = BarcodeScanState.Error("Barcode not recognised. Add manually.") }
+                .onFailure { e ->
+                    _state.value = BarcodeScanState.Error(
+                        if (e is ProductNotFoundException) "Product not found. Add manually."
+                        else "Couldn't reach Open Food Facts. Check your connection and try again."
+                    )
+                }
         }
     }
 

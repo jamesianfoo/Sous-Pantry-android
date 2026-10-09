@@ -9,6 +9,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.souspantry.app.data.repository.MyRecipeRepository
 import com.souspantry.app.services.ApiService
+import com.souspantry.app.services.DirectClaude
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,8 +42,9 @@ private data class TransientState(
 
 @HiltViewModel
 class MyRecipesViewModel @Inject constructor(
-    private val api  : ApiService,
-    private val repo : MyRecipeRepository,
+    private val api    : ApiService,
+    private val claude : DirectClaude,
+    private val repo   : MyRecipeRepository,
 ) : ViewModel() {
 
     private val _transient = MutableStateFlow(TransientState())
@@ -76,7 +78,7 @@ class MyRecipesViewModel @Inject constructor(
 
     fun remove(id: String) = viewModelScope.launch { repo.delete(id) }
 
-    // ── Scan (OCR on-device → backend parse) ─────────────────────────────────
+    // ── Scan (OCR on-device → Worker parse; backend only if no app secret) ───
 
     fun scanFromBitmap(bitmap: Bitmap) = viewModelScope.launch {
         _transient.update { it.copy(scanning = true, scanError = null) }
@@ -84,7 +86,8 @@ class MyRecipesViewModel @Inject constructor(
             val text = recogniseText(bitmap)
             Log.d("RecipeScan", "OCR extracted ${text.length} chars")
             if (text.isBlank()) error("No text detected. Make sure the recipe is well-lit and in focus.")
-            api.scanRecipeText(mapOf("text" to text))
+            if (claude.enabled) claude.scanRecipeText(text)
+            else api.scanRecipeText(mapOf("text" to text))
         }
             .onSuccess { parsed ->
                 val draft = MyRecipe(

@@ -20,12 +20,7 @@ Settings in `local.properties` are compiled into the app, so changing them needs
 
 ### The optional local backend
 
-`backend/` is a small Express server kept for features that haven't moved to the proxy yet:
-
-- **Barcode lookup** (`/api/barcode`)
-- **Recipe text scanning** (`/api/recipe/scan-text`)
-
-It's also the fallback for AI features when the app's settings aren't configured. To run it on a USB-connected phone:
+No feature needs `backend/` any more: barcode lookup calls Open Food Facts directly and every AI feature (Discover chat, receipt and eReceipt parsing, shopping lists, recipe-photo scanning) goes through the Worker proxy. The Express server in `backend/` is kept only as a fallback for AI features when the app secret isn't set in `local.properties`. To run it on a USB-connected phone:
 
 ```bash
 cd backend && npm install && npm start
@@ -52,7 +47,7 @@ app/src/main/java/com/souspantry/app/
     ├── ereceipt/  Supermarket eReceipt sync (every region)
     ├── account/   Account, dietary and meal-mood editors
     └── theme/     Design system colours and type scale
-backend/           Optional Node backend (see above)
+backend/           Legacy Node backend, fallback only (see above)
 ```
 
 Worth knowing before you change these areas:

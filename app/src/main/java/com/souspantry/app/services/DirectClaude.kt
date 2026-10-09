@@ -7,6 +7,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.data.models.ReceiptLineItem
+import com.souspantry.app.data.models.ScannedRecipe
 import com.souspantry.app.data.models.ShoppingItem
 import com.souspantry.app.data.models.SuggestedMeal
 import retrofit2.http.Body
@@ -178,7 +179,91 @@ class DirectClaude @Inject constructor(
         """.trimIndent()
         return parseJsonArray(call(prompt))
     }
+
+    // ── Barcode name cleanup ─────────────────────────────────────────────────
+
+    /**
+     * Common English grocery name for a foreign-language Open Food Facts
+     * product name (mirrors iOS `OpenFoodFactsService.englishName`).
+     * Null when the reply is empty or implausibly long.
+     */
+    suspend fun cleanProductName(name: String, brand: String?): String? {
+        val prompt = "Give the common English grocery product name for this item. " +
+            "Reply with ONLY the name, no quotes or explanation.\n" +
+            "Product: $name" + (brand?.let { " (brand: $it)" } ?: "")
+        return call(prompt, maxTokens = 40).trim().trim('"', '\'')
+            .takeIf { it.isNotEmpty() && it.length < 60 }
+    }
+
+    // ── Recipe scan (on-device OCR text → structured recipe) ─────────────────
+
+    /**
+     * Turns OCR text from a recipe photo into a [ScannedRecipe]. Prompt ported
+     * from backend/src/routes/recipe.js (same shape as `ScannedRecipe`), with
+     * the iOS `RecipeScanService` "no_recipe" guard.
+     */
+    suspend fun scanRecipeText(text: String): ScannedRecipe {
+        val prompt = """
+            The following text was extracted via OCR from a photo of a recipe (could be a cookbook page, a handwritten card, a printout, or a screenshot). Reconstruct it into a clean, structured recipe.
+
+            Rules:
+            - Fix OCR artefacts and obvious typos.
+            - Infer a sensible title if one isn't clearly present.
+            - Separate ingredients from method steps.
+            - Each ingredient is a single line like "200g chicken breast" or "2 cloves garlic, minced".
+            - Each step is one instruction. Split run-on paragraphs into discrete steps.
+            - prepTime / cookTime as short strings like "15 min" or "" if unknown.
+            - difficulty is one of "Easy", "Medium", "Hard" (best guess).
+            - cuisine is a single word if identifiable, otherwise "".
+            - servings is an integer (default 2 if unknown).
+            - description is one short sentence, or "".
+            - Do NOT invent ingredients or steps that aren't in the text.
+            - Only return {"error":"no_recipe"} if the text is clearly unrelated to food/cooking or contains no legible recipe content at all. If ANYTHING looks like a recipe, transcribe it and fill in reasonable defaults.
+
+            Recipe OCR text:
+            $text
+
+            Return a JSON object only — no markdown, no explanation:
+            {"name":"Recipe title","description":"One short sentence or empty","cuisine":"Italian or empty","difficulty":"Easy | Medium | Hard","prepTime":"15 min or empty","cookTime":"30 min or empty","servings":2,"ingredients":["200g chicken breast","2 cloves garlic, minced"],"steps":["Preheat the oven to 200C.","Season the chicken."]}
+        """.trimIndent()
+        return parseScannedRecipe(call(prompt, maxTokens = 2048))
+    }
 }
+
+/**
+ * `{"name":…,"ingredients":[…],"steps":[…]}` → [ScannedRecipe]. Strips code
+ * fences and any prose before the first `{`. `{"error":"no_recipe"}`, a
+ * missing name, or malformed JSON throws with a user-facing message.
+ */
+internal fun parseScannedRecipe(raw: String): ScannedRecipe {
+    val clean = raw.replace("```json", "").replace("```", "")
+    val json  = clean.substring(clean.indexOf('{').coerceAtLeast(0))
+    val o = runCatching { JsonParser.parseString(json) }.getOrNull()
+        ?.takeIf { it.isJsonObject }?.asJsonObject
+        ?: throw IllegalStateException(NO_RECIPE_MESSAGE)
+    fun str(key: String): String? =
+        o.get(key)?.takeIf { it.isJsonPrimitive }?.asString?.trim()?.takeIf { it.isNotEmpty() }
+    fun list(key: String): List<String> =
+        o.get(key)?.takeIf { it.isJsonArray }?.asJsonArray
+            ?.mapNotNull { e -> e.takeIf { it.isJsonPrimitive }?.asString?.trim()?.takeIf { it.isNotEmpty() } }
+            ?: emptyList()
+
+    if (str("error") != null) throw IllegalStateException(NO_RECIPE_MESSAGE)
+    val name = str("name") ?: throw IllegalStateException(NO_RECIPE_MESSAGE)
+    return ScannedRecipe(
+        name        = name,
+        description = str("description"),
+        cuisine     = str("cuisine"),
+        difficulty  = str("difficulty"),
+        prepTime    = str("prepTime"),
+        cookTime    = str("cookTime"),
+        servings    = str("servings")?.toDoubleOrNull()?.toInt(),
+        ingredients = list("ingredients"),
+        steps       = list("steps"),
+    )
+}
+
+private const val NO_RECIPE_MESSAGE = "Couldn't read a recipe from that image."
 
 /**
  * Accepts `{"storeName": …, "items": […]}` or a bare items array. Tolerates the
