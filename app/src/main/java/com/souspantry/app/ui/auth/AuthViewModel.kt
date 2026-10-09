@@ -14,6 +14,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.souspantry.app.BuildConfig
 import com.souspantry.app.data.local.UserPreferencesRepository
 import com.souspantry.app.services.Subscriptions
+import com.souspantry.app.services.SupabaseClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +38,7 @@ data class AuthState(
 class AuthViewModel @Inject constructor(
     private val prefs         : UserPreferencesRepository,
     private val subscriptions : Subscriptions,
+    private val supabase      : SupabaseClient,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -74,6 +76,10 @@ class AuthViewModel @Inject constructor(
                     return@onSuccess
                 }
                 val google = GoogleIdTokenCredential.createFrom(credential.data)
+                // Bridge the Google token into a Supabase session (RLS / RPCs). Non-fatal,
+                // as on iOS: a Supabase outage must never keep the user out of the app.
+                runCatching { supabase.signInWithGoogle(google.idToken) }
+                    .onFailure { Log.w("SousAuth", "Supabase bridge failed (non-fatal)", it) }
                 // `id` is the account's email address.
                 prefs.setUserEmail(google.id)
                 prefs.setUserName(google.displayName?.takeIf { it.isNotBlank() } ?: google.id.substringBefore("@"))

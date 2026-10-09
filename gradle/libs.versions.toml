@@ -23,6 +23,8 @@ accompanist         = "0.36.0"
 firebase-bom        = "33.7.0"
 workmanager         = "2.10.0"
 play-location       = "21.3.0"
+supabase            = "3.1.4"
+ktor                = "3.1.2"
 
 [libraries]
 # Compose BOM
@@ -92,6 +94,12 @@ firebase-messaging   = { group = "com.google.firebase",  name = "firebase-messag
 
 # WorkManager (background sync, geofence)
 workmanager          = { group = "androidx.work",         name = "work-runtime-ktx",          version.ref = "workmanager" }
+
+# Supabase (auth bridge + RPC, as on iOS). Ktor major must match supabase-kt's.
+supabase-bom         = { group = "io.github.jan-tennert.supabase", name = "bom",         version.ref = "supabase" }
+supabase-auth        = { group = "io.github.jan-tennert.supabase", name = "auth-kt" }
+supabase-postgrest   = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt" }
+ktor-okhttp          = { group = "io.ktor",                        name = "ktor-client-okhttp", version.ref = "ktor" }
 
 # Play Services Location (geofencing)
 play-location        = { group = "com.google.android.gms", name = "play-services-location",   version.ref = "play-location" }

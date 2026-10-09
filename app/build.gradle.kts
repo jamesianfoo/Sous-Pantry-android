@@ -51,6 +51,13 @@ android {
         // a public key by design; the secret key never ships. Blank = billing off.
         val rcKey = localProps.getProperty("REVENUECAT_ANDROID_KEY") ?: ""
         buildConfigField("String", "REVENUECAT_ANDROID_KEY", "\"$rcKey\"")
+
+        // Supabase project URL + anon (public) key, same project as iOS APIConfig.
+        // Blank = Supabase off: Google sign-in still works, no server-side bridge.
+        val supabaseUrl = localProps.getProperty("SUPABASE_URL") ?: ""
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        val supabaseAnonKey = localProps.getProperty("SUPABASE_ANON_KEY") ?: ""
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
     buildTypes {
@@ -113,6 +120,12 @@ dependencies {
 
     // RevenueCat (Google Play Billing) — same dashboard and entitlement as iOS
     implementation(libs.revenuecat)
+
+    // Supabase (Google session bridge + delete_my_account RPC, as on iOS)
+    implementation(platform(libs.supabase.bom))
+    implementation(libs.supabase.auth)
+    implementation(libs.supabase.postgrest)
+    implementation(libs.ktor.okhttp)
 
     // ML Kit (barcode + text recognition)
     implementation(libs.mlkit.barcode)

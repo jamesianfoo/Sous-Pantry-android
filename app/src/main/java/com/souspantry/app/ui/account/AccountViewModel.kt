@@ -10,9 +10,13 @@ import com.souspantry.app.data.repository.PriceRepository
 import com.souspantry.app.data.repository.SavedRecipeRepository
 import com.souspantry.app.data.repository.ShoppingRepository
 import com.souspantry.app.data.repository.WeekPlanRepository
+import com.souspantry.app.services.Subscriptions
+import com.souspantry.app.services.SupabaseClient
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -49,7 +53,8 @@ class AccountViewModel @Inject constructor(
     private val shopping  : ShoppingRepository,
     private val prices    : PriceRepository,
     private val hauls     : HaulRepository,
-    private val subscriptions : com.souspantry.app.services.Subscriptions,
+    private val subscriptions : Subscriptions,
+    private val supabase  : SupabaseClient,
 ) : ViewModel() {
 
     // Compose 13 flows into one state. We chain two combines because combine() has
@@ -137,35 +142,47 @@ class AccountViewModel @Inject constructor(
 
     // ── Account actions ─────────────────────────────────────────────────────
 
+    /** Shown by the screen when the server-side deletion fails; nothing local was touched. */
+    private val _deleteError = MutableStateFlow<String?>(null)
+    val deleteError: StateFlow<String?> = _deleteError.asStateFlow()
+    fun clearDeleteError() { _deleteError.value = null }
+
     /**
-     * Logs out the local session. Clears the Supabase session token and the
-     * user's profile-identity prefs (name/email), but KEEPS local data (pantry,
-     * plans, recipes, shopping) — logging out shouldn't destroy your data.
-     * When Supabase auth lands (Task 7) this also calls the remote sign-out.
+     * Log Out, as on iOS `UserSession.signOut()`: drops the Supabase session and
+     * the RevenueCat identity, then the local profile (name/email/signed-in).
+     * KEEPS pantry data and the funnel flag — logging out shouldn't destroy your
+     * data, and a returning user is never re-gated.
      *
-     * @param onComplete invoked on the main scope once the local sign-out finishes
-     *                   so the UI can navigate to the welcome/auth flow.
+     * @param onComplete invoked once the sign-out finishes so the UI can
+     *                   navigate to the auth screen.
      */
     fun logOut(onComplete: () -> Unit = {}) = viewModelScope.launch {
-        prefs.clearSupabaseSession()
-        prefs.setSignedIn(false)
-        prefs.setUserName("")
-        prefs.setUserEmail("")
+        supabase.signOut()
+        subscriptions.unidentify()
+        prefs.signOut()
         onComplete()
     }
 
     /**
-     * Hard factory reset. Erases EVERY local store — pantry, weekly plans,
-     * My Recipes, Saved Recipes, shopping list — and clears all DataStore prefs
-     * (profile, diet, notifications, onboarding flag; deviceId is preserved).
-     * Mirrors iOS Delete Account, minus the Supabase server-side erase which we
-     * add when auth lands.
+     * Delete Account, in the iOS order: erase the user's Supabase data + auth
+     * user FIRST (needs the session), then wipe every local store — pantry,
+     * weekly plans, My Recipes, Saved Recipes, shopping list — and all DataStore
+     * prefs (deviceId is preserved), then log out of RevenueCat.
+     *
+     * If the server call fails nothing local is wiped: [deleteError] is set so
+     * the user can retry, instead of silently leaving their server data behind.
      *
      * @param onComplete invoked once the wipe finishes so the UI can return to
-     *                   the onboarding flow (the app is now in a fresh state).
+     *                   the auth flow (the app is now in a fresh state).
      */
     fun deleteAccount(onComplete: () -> Unit = {}) = viewModelScope.launch {
-        // Wipe every Room table
+        // 1. Server-side erase while still authenticated.
+        val erased = runCatching { supabase.deleteMyAccount() }
+        if (erased.isFailure) {
+            _deleteError.value = "Couldn't delete your account. Check your connection and try again."
+            return@launch
+        }
+        // 2. Wipe every Room table
         pantry.deleteAll()
         weekPlan.deleteAll()
         myRecipe.deleteAll()

@@ -43,6 +43,7 @@ fun AccountScreen(
     vm              : AccountViewModel = hiltViewModel(),
 ) {
     val state by vm.state.collectAsState()
+    val deleteError by vm.deleteError.collectAsState()
 
     var showDietaryEditor by remember { mutableStateOf(false) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
@@ -381,6 +382,15 @@ fun AccountScreen(
             dismissButton    = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } },
             title            = { Text("Delete account?") },
             text             = { Text("This permanently erases everything on this device — your pantry, weekly plans, recipes, saved recipes, shopping list, and all preferences. This can't be undone.") },
+            containerColor   = Color.White,
+        )
+    }
+    deleteError?.let { message ->
+        AlertDialog(
+            onDismissRequest = { vm.clearDeleteError() },
+            confirmButton    = { TextButton(onClick = { vm.clearDeleteError() }) { Text("OK") } },
+            title            = { Text("Deletion failed") },
+            text             = { Text(message) },
             containerColor   = Color.White,
         )
     }
