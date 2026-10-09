@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.souspantry.app.data.local.UserPreferencesRepository
 import com.souspantry.app.data.models.PantryItem
+import com.souspantry.app.data.repository.HaulRepository
 import com.souspantry.app.data.repository.PantryRepository
 import com.souspantry.app.data.repository.PriceRepository
 import com.souspantry.app.services.ApiService
@@ -145,6 +146,7 @@ class EReceiptViewModel @Inject constructor(
     private val claude : DirectClaude,
     private val pantry : PantryRepository,
     private val prices : PriceRepository,
+    private val hauls  : HaulRepository,
     private val prefs  : UserPreferencesRepository,
 ) : ViewModel() {
 
@@ -218,6 +220,9 @@ class EReceiptViewModel @Inject constructor(
                     pantry.addAll(added)
                     // Digital sync: the store is known from the session when the parser didn't name one.
                     prices.recordReceipt(items, added, storeName ?: store.name, knownStores)
+                    // iOS: HaulStore.recordHaul + StoreSessionStore.recordSync after every sync.
+                    hauls.record(items, storeName ?: store.name)
+                    prefs.recordStoreSync(store.id)
                     // "2 x 500g" counts as 2, so the banner matches the receipt.
                     val units = items.sumOf { it.count.coerceAtLeast(1) }
                     _transient.update {

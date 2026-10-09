@@ -98,7 +98,26 @@ class UserPreferencesRepository @Inject constructor(
         val KEY_CUSTOM_STORES    = stringSetPreferencesKey("ereceipt_custom_stores")
         // eReceipt connected built-in stores — set of built-in store IDs the user added.
         val KEY_CONNECTED_STORES = stringSetPreferencesKey("ereceipt_connected_stores")
+        // eReceipt per-store last sync (epoch millis) — iOS ConnectedStore.lastSyncDate.
+        private const val LAST_SYNC_PREFIX = "ereceipt_last_sync_"
+        fun lastSyncKey(storeId: String) = longPreferencesKey("$LAST_SYNC_PREFIX$storeId")
+
+        // Home: when the Pantry "Expiring" filter was last opened (iOS sp_lastAuditDate).
+        val KEY_LAST_AUDIT_DATE  = longPreferencesKey("last_audit_date")
+
+        // Cooking streak (iOS StreakService, same key names). Awards: streak_awarded_{id}.
+        val KEY_STREAK_CURRENT     = intPreferencesKey("streak_currentStreak")
+        val KEY_STREAK_MEALS_WEEK  = intPreferencesKey("streak_mealsThisWeek")
+        val KEY_STREAK_TOTAL       = intPreferencesKey("streak_totalMealsCooked")
+        val KEY_STREAK_LAST_COOKED = longPreferencesKey("streak_lastCookedDate")
+        val KEY_STREAK_WEEK_START  = longPreferencesKey("streak_weekStart")
+        val KEY_STREAK_BANNER      = stringPreferencesKey("streak_bannerReward")
+        fun streakAwardedKey(id: String) = booleanPreferencesKey("streak_awarded_$id")
     }
+
+    /** Raw preference snapshots / transactional edits for services that own a key family (StreakService). */
+    val preferences: Flow<Preferences> = context.dataStore.data
+    suspend fun edit(transform: suspend (MutablePreferences) -> Unit): Preferences = context.dataStore.edit(transform)
 
     // ── Reads ────────────────────────────────────────────────────────────────
 
@@ -147,6 +166,14 @@ class UserPreferencesRepository @Inject constructor(
 
     val customStores: Flow<Set<String>> = context.dataStore.data.map { it[KEY_CUSTOM_STORES] ?: emptySet() }
     val connectedStores: Flow<Set<String>> = context.dataStore.data.map { it[KEY_CONNECTED_STORES] ?: emptySet() }
+    /** storeId → last successful eReceipt sync, epoch millis. Home takes the max for "Last recipe scan was …". */
+    val lastSyncDates: Flow<Map<String, Long>> = context.dataStore.data.map { prefs ->
+        prefs.asMap().mapNotNull { (key, value) ->
+            val name = key.name
+            if (name.startsWith(LAST_SYNC_PREFIX) && value is Long) name.removePrefix(LAST_SYNC_PREFIX) to value else null
+        }.toMap()
+    }
+    val lastAuditDate: Flow<Long?> = context.dataStore.data.map { it[KEY_LAST_AUDIT_DATE] }
 
     // ── Writes ───────────────────────────────────────────────────────────────
 
@@ -201,6 +228,13 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun removeConnectedStore(id: String) = context.dataStore.edit { prefs ->
         prefs[KEY_CONNECTED_STORES] = (prefs[KEY_CONNECTED_STORES] ?: emptySet()) - id
     }
+    /** Stamps a successful eReceipt sync for [storeId] (iOS StoreSessionStore.recordSync). */
+    suspend fun recordStoreSync(storeId: String, at: Long = System.currentTimeMillis()) =
+        context.dataStore.edit { it[lastSyncKey(storeId)] = at }
+
+    /** Pantry stamps this whenever the "Expiring" filter is selected (iOS PantryView). */
+    suspend fun setLastAuditDate(at: Long = System.currentTimeMillis()) =
+        context.dataStore.edit { it[KEY_LAST_AUDIT_DATE] = at }
 
     suspend fun setSignedIn(on: Boolean)              = context.dataStore.edit { it[KEY_SIGNED_IN] = on }
 

@@ -44,6 +44,21 @@ data class PriceRecord(
 val PriceRecord.displayStore: String
     get() = if (store == OTHERS_STORE) customStore ?: "Other" else store
 
+/**
+ * One recorded shop (iOS HaulStore.HaulEntry): written after every receipt
+ * scan / eReceipt sync that carried prices. Feeds the Price Trends sheet's
+ * MONTHLY SPEND and SPENDING STREAK sections.
+ */
+@Entity(tableName = "haul_history")
+data class HaulRecord(
+    @PrimaryKey val id : String  = java.util.UUID.randomUUID().toString(),
+    val date           : Long    = System.currentTimeMillis(),   // epoch millis
+    /** Sum of unit price × units bought, in the receipt's own currency. */
+    val cost           : Double,
+    val count          : Int,
+    val storeName      : String? = null,
+)
+
 // ── API response models ───────────────────────────────────────────────────────
 
 data class IdentifyResponse(

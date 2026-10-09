@@ -3,6 +3,7 @@ package com.souspantry.app.ui.account
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.souspantry.app.data.local.UserPreferencesRepository
+import com.souspantry.app.data.repository.HaulRepository
 import com.souspantry.app.data.repository.MyRecipeRepository
 import com.souspantry.app.data.repository.PantryRepository
 import com.souspantry.app.data.repository.PriceRepository
@@ -47,6 +48,7 @@ class AccountViewModel @Inject constructor(
     private val saved     : SavedRecipeRepository,
     private val shopping  : ShoppingRepository,
     private val prices    : PriceRepository,
+    private val hauls     : HaulRepository,
     private val subscriptions : com.souspantry.app.services.Subscriptions,
 ) : ViewModel() {
 
@@ -170,7 +172,9 @@ class AccountViewModel @Inject constructor(
         saved.deleteAll()
         shopping.deleteAll()
         prices.deleteAll()
+        hauls.deleteAll()
         // Full reset (keeps only deviceId): intro + funnel run again, as on iOS.
+        // Also wipes the streak_* / last_audit_date / ereceipt_last_sync_* keys (iOS wipes sp_*).
         prefs.clearAll()
         // Does NOT cancel the Google Play subscription — the user manages that in Play.
         subscriptions.unidentify()

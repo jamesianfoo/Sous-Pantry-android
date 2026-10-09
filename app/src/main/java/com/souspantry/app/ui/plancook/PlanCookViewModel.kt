@@ -17,6 +17,7 @@ import com.souspantry.app.services.DirectClaude
 import com.souspantry.app.services.RecipeLink
 import com.souspantry.app.services.RecipeLinkResolver
 import com.souspantry.app.services.RecipeImages
+import com.souspantry.app.services.StreakService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -79,6 +80,7 @@ class PlanCookViewModel @Inject constructor(
     private val prefs    : UserPreferencesRepository,
     private val shopping : ShoppingRepository,
     private val history  : MealHistoryRepository,
+    private val streak   : StreakService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PlanCookState())
@@ -283,6 +285,7 @@ class PlanCookViewModel @Inject constructor(
             }
             if (match != null) repo.delete(match)
         }
+        streak.recordMealCooked()   // iOS: StreakService.shared.recordMealCooked() on every cook confirm
     }
 
     /** Adds missing recipe ingredients to the shopping list (Essential, AI source). */

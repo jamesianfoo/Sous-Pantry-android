@@ -9,6 +9,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.souspantry.app.data.models.PantryItem
 import com.souspantry.app.data.models.ReceiptLineItem
+import com.souspantry.app.data.repository.HaulRepository
 import com.souspantry.app.data.repository.PantryRepository
 import com.souspantry.app.data.repository.PriceRepository
 import com.souspantry.app.data.local.UserPreferencesRepository
@@ -50,6 +51,7 @@ class ReceiptScanViewModel @Inject constructor(
     private val prefs  : UserPreferencesRepository,
     private val repo   : PantryRepository,
     private val prices : PriceRepository,
+    private val hauls  : HaulRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<ReceiptScanState>(ReceiptScanState.Ready)
@@ -101,6 +103,7 @@ class ReceiptScanViewModel @Inject constructor(
         repo.addAll(added)
         // Paper receipts have no session store: the parsed name, else "Others".
         prices.recordReceipt(items, added, parsedStore, knownStores)
+        hauls.record(items, parsedStore)   // iOS: HaulStore.recordHaul after insertItems
         _state.value = ReceiptScanState.Saved
     }
 

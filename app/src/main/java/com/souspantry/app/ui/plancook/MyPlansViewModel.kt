@@ -7,6 +7,7 @@ import com.souspantry.app.data.models.SuggestedMeal
 import com.souspantry.app.data.repository.PantryRepository
 import com.souspantry.app.data.repository.ShoppingRepository
 import com.souspantry.app.data.repository.WeekPlanRepository
+import com.souspantry.app.services.StreakService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,6 +31,7 @@ class MyPlansViewModel @Inject constructor(
     private val repo     : WeekPlanRepository,
     private val pantry   : PantryRepository,
     private val shopping : ShoppingRepository,
+    private val streak   : StreakService,
 ) : ViewModel() {
 
     private val _weekOffset = MutableStateFlow(0)
@@ -85,6 +87,7 @@ class MyPlansViewModel @Inject constructor(
             if (match != null) pantry.delete(match)
         }
         repo.delete(entry.id)
+        streak.recordMealCooked()   // iOS: StreakService.shared.recordMealCooked() on every cook confirm
     }
 
     /** Adds the missing recipe ingredients to the shopping list (Essential, AI source). */
