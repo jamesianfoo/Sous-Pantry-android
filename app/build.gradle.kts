@@ -138,6 +138,9 @@ dependencies {
     implementation(libs.camerax.view)
     implementation(libs.camerax.mlkit)
 
+    // WorkManager (trial-ending reminder)
+    implementation(libs.workmanager)
+
     // DataStore
     implementation(libs.datastore.prefs)
 

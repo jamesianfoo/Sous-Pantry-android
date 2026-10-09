@@ -1,6 +1,10 @@
 package com.souspantry.app.ui.funnel
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -31,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.souspantry.app.BuildConfig
+import com.souspantry.app.services.TrialReminder
 import com.souspantry.app.ui.paywall.PaywallScreen
 import com.souspantry.app.ui.theme.*
 import kotlinx.coroutines.delay
@@ -49,9 +54,14 @@ fun FunnelScreen(
         FunnelPhase.BUILDING -> BuildingOverlay(state) { vm.advancePhase(FunnelPhase.REMINDER) }
         FunnelPhase.REMINDER -> TrialReminderScreen(state, vm) { vm.advancePhase(FunnelPhase.PAYWALL) }
         FunnelPhase.PAYWALL  -> Box {
+            val context = LocalContext.current
             // HARD paywall during onboarding — no close (deliberate; mirrors iOS).
             PaywallScreen(
-                onPurchased = { vm.complete(onComplete) },
+                // Trial starts now → schedule the reminder they asked for (iOS parity).
+                onPurchased = {
+                    TrialReminder.scheduleFromPurchase(context, state.trialReminder)
+                    vm.complete(onComplete)
+                },
                 onDismiss   = { /* unreachable: close hidden */ },
                 showClose   = false,
             )
@@ -324,6 +334,11 @@ private fun BuildingOverlay(state: FunnelState, onDone: () -> Unit) {
 
 @Composable
 private fun TrialReminderScreen(state: FunnelState, vm: FunnelViewModel, onContinue: () -> Unit) {
+    // iOS asks for notification permission on Continue; Android 13+ needs the runtime prompt.
+    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onContinue() }
+    val continueAfterPermission = {
+        if (Build.VERSION.SDK_INT >= 33) askPermission.launch(Manifest.permission.POST_NOTIFICATIONS) else onContinue()
+    }
     Column(modifier = Modifier.fillMaxSize().background(Cream)) {
         Column(
             modifier = Modifier.weight(1f).padding(horizontal = 20.dp),
@@ -344,7 +359,7 @@ private fun TrialReminderScreen(state: FunnelState, vm: FunnelViewModel, onConti
             Spacer(Modifier.height(20.dp))
             Text("Easy to cancel. No penalties. No surprises.", color = Slate.copy(alpha = 0.7f), fontSize = 12.sp)
         }
-        CtaButton("Continue", enabled = true, onClick = onContinue)
+        CtaButton("Continue", enabled = true, onClick = continueAfterPermission)
     }
 }
 
