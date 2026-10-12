@@ -18,13 +18,13 @@ val localProps = Properties().apply {
 
 android {
     namespace         = "com.souspantry.app"
-    compileSdk        = 35
+    compileSdk        = 36
 
     defaultConfig {
         applicationId = "com.souspantry.app"
         minSdk        = 26
-        targetSdk     = 35
-        versionCode   = 1
+        targetSdk     = 36
+        versionCode   = 2
         versionName   = "1.0"
 
         val baseUrl = localProps.getProperty("BASE_URL") ?: "http://10.0.2.2:3000"
@@ -60,9 +60,26 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
+    // Upload-key signing from local.properties (git-ignored), so `bundleRelease`
+    // produces a Play-ready AAB. Keys: RELEASE_STORE_FILE (absolute path),
+    // RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD.
+    // Absent = unsigned bundle, sign it manually with jarsigner.
+    val storeFilePath = localProps.getProperty("RELEASE_STORE_FILE")
+    if (!storeFilePath.isNullOrBlank()) {
+        signingConfigs {
+            create("upload") {
+                storeFile     = file(storeFilePath)
+                storePassword = localProps.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias      = localProps.getProperty("RELEASE_KEY_ALIAS") ?: "souspantry"
+                keyPassword   = localProps.getProperty("RELEASE_KEY_PASSWORD") ?: localProps.getProperty("RELEASE_STORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            if (!storeFilePath.isNullOrBlank()) signingConfig = signingConfigs.getByName("upload")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "BASE_URL", "\"https://api.souspantry.com\"")
         }
