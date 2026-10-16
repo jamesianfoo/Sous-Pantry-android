@@ -24,7 +24,7 @@ android {
         applicationId = "com.souspantry.app"
         minSdk        = 26
         targetSdk     = 36
-        versionCode   = 2
+        versionCode   = 3
         versionName   = "1.0"
 
         val baseUrl = localProps.getProperty("BASE_URL") ?: "http://10.0.2.2:3000"
