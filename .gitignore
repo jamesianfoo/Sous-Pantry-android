@@ -21,3 +21,6 @@ backend/redeemedCodes.json
 # Signed release output
 /app/release/
 /.gradle-sandbox/
+
+# Claude Code local session state
+.claude/

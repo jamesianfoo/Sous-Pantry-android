@@ -24,7 +24,7 @@ android {
         applicationId = "com.souspantry.app"
         minSdk        = 26
         targetSdk     = 36
-        versionCode   = 3
+        versionCode   = 4
         versionName   = "1.0"
 
         val baseUrl = localProps.getProperty("BASE_URL") ?: "http://10.0.2.2:3000"
@@ -82,6 +82,8 @@ android {
             if (!storeFilePath.isNullOrBlank()) signingConfig = signingConfigs.getByName("upload")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "BASE_URL", "\"https://api.souspantry.com\"")
+            // Play Console: bundle native debug symbols so native crashes are symbolicated.
+            ndk { debugSymbolLevel = "FULL" }
         }
     }
 

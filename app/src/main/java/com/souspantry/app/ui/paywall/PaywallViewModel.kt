@@ -71,8 +71,11 @@ class PaywallViewModel @Inject constructor(
 
     fun restore(onRestored: () -> Unit) = viewModelScope.launch {
         _state.update { it.copy(processing = true, error = null) }
-        val found = subscriptions.restore()
-        _state.update { it.copy(processing = false, error = if (found) null else "No active subscription found for this Google account.") }
+        val result = subscriptions.restore()
+        val found = result.getOrDefault(false)
+        val error = result.exceptionOrNull()?.let { "Couldn't reach the store: ${it.message ?: "network error"}" }
+            ?: if (found) null else "No active subscription found for this Google account."
+        _state.update { it.copy(processing = false, error = error) }
         if (found) onRestored()
     }
 }

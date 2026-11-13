@@ -113,13 +113,13 @@ class Subscriptions @Inject constructor(
         }
     }
 
-    /** True if an active subscription was found for this Google account. */
-    suspend fun restore(): Boolean {
-        if (!enabled) return false
+    /** Success(true) if an active subscription was found for this Google account; Failure carries the SDK/network error. */
+    suspend fun restore(): Result<Boolean> {
+        if (!enabled) return Result.success(false)
         return runCatching { Purchases.sharedInstance.awaitRestore() }
             .onSuccess { apply(it) }
+            .onFailure { Log.e("Subscriptions", "restore failed", it) }
             .map { isPro(it) }
-            .getOrDefault(false)
     }
 
     /** After sign-in: the email becomes the RevenueCat user ID, so purchases follow the account (as on iOS). */
